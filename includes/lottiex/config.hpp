@@ -3,9 +3,7 @@
 
 #pragma once
 
-#include <arpa/inet.h>
-#include <cstdint>
-#include <nlohmann/json.hpp>
+#include <lottiex/routes.hpp>
 
 #include <filesystem>
 #include <fstream>
@@ -20,6 +18,8 @@ struct ServerConfig {
     bool static_enabled;
     std::filesystem::path root;
     std::string index;
+    std::map<std::string, Upstream> upstreams;
+    std::vector<Route> routes;
 };
 
 inline ServerConfig load_config(const std::filesystem::path& path) {
@@ -28,49 +28,38 @@ inline ServerConfig load_config(const std::filesystem::path& path) {
         throw std::runtime_error("Cannot open configuration: " + path.string());
     }
 
-    const auto json = nlohmann::json::parse(input);
-    const auto& server = json.at("server");
-    const auto& files = json.at("static");
-    if (!server.at("host").is_string() || !server.at("port").is_number_integer() ||
-        !files.at("enabled").is_boolean() || !files.at("root").is_string() ||
-        !files.at("index").is_string()) {
-        throw std::runtime_error("Invalid configuration field types");
-    }
+    const auto json = Json::parse(input);
+    check_fields(json, "", {"server", "static", "upstreams", "routes"});
+    const auto server = config_field<Json>(json, "server", "server");
+    const auto files = config_field<Json>(json, "static", "static");
+    check_fields(server, "server", {"host", "port"});
+    check_fields(files, "static", {"enabled", "root", "index"});
 
-    const auto port = server.at("port").get<std::int64_t>();
-    if (port < 1 || port > 65535) {
-        throw std::runtime_error("Port must be in 1..65535");
-    }
+    ServerConfig config{};
+    config.host = config_field<std::string>(server, "host", "server.host");
+    if (!numeric_ip(config.host)) invalid_field("server.host");
 
-    ServerConfig config{
-        server.at("host").get<std::string>(),
-        static_cast<unsigned short>(port),
-        files.at("enabled").get<bool>(),
-        files.at("root").get<std::string>(),
-        files.at("index").get<std::string>()
-    };
+    const auto port = config_number(server, "port", "server.port", 1, 65535, 0);
+    if (!port) invalid_field("server.port");
 
-    in_addr ipv4{};
-    in6_addr ipv6{};
-    if (config.host.find('\0') != std::string::npos ||
-        (inet_pton(AF_INET, config.host.c_str(), &ipv4) != 1 &&
-         inet_pton(AF_INET6, config.host.c_str(), &ipv6) != 1)) {
-        throw std::runtime_error("Host must be a numeric IP address");
-    }
+    config.port = static_cast<unsigned short>(port);
+    config.static_enabled = config_field<bool>(files, "enabled", "static.enabled");
+    config.root = config_field<std::string>(files, "root", "static.root");
+    config.index = config_field<std::string>(files, "index", "static.index");
 
     const std::filesystem::path index(config.index);
-    if (index.empty() || index.is_absolute()) {
-        throw std::runtime_error("Invalid index path");
+    if (index.empty() || index.is_absolute() || config.index.find('\0') != std::string::npos) {
+        invalid_field("static.index");
     }
 
     for (const auto& part : index) {
         if (part == "..") {
-            throw std::runtime_error("Invalid index path");
+            invalid_field("static.index");
         }
     }
 
-    if (config.root.empty()) {
-        throw std::runtime_error("Static root must not be empty");
+    if (config.root.empty() || config.root.native().find('\0') != std::string::npos) {
+        invalid_field("static.root");
     }
 
     if (config.root.is_relative()) {
@@ -78,12 +67,28 @@ inline ServerConfig load_config(const std::filesystem::path& path) {
     }
 
     if (config.static_enabled) {
-        config.root = std::filesystem::canonical(config.root);
-        if (!std::filesystem::is_directory(config.root)) {
-            throw std::runtime_error("Static root is not a directory");
+        std::error_code error;
+        config.root = std::filesystem::canonical(config.root, error);
+        if (error || !std::filesystem::is_directory(config.root, error)) invalid_field("static.root");
+    }
+
+    if (json.contains("upstreams")) {
+        const auto& entries = json.at("upstreams");
+        if (!entries.is_object()) invalid_field("upstreams");
+
+        for (auto it = entries.begin(); it != entries.end(); ++it) {
+            const auto field = "upstreams." + it.key();
+            if (it.key().empty() || it.key().find_first_not_of(
+                "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-") != std::string::npos) {
+                invalid_field("upstreams");
+            }
+
+            if (!it.value().is_string()) invalid_field(field);
+            config.upstreams.emplace(it.key(), parse_upstream(it.value().get<std::string>(), field));
         }
     }
 
+    config.routes = load_routes(json, config.upstreams);
     return config;
 }
 
