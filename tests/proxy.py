@@ -57,12 +57,19 @@ class Upstream(BaseHTTPRequestHandler):
             self.close_connection = True
             return
 
-        if self.path in ("/events", "/drain"):
+        if self.path in ("/events", "/drain", "/cancel"):
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream")
             self.send_header("Transfer-Encoding", "chunked")
             self.end_headers()
             self.wfile.write(b"B\r\ndata: one\n\n\r\n")
+            if self.path == "/cancel":
+                self.connection.settimeout(4)
+                if not self.rfile.read(1):
+                    self.server.cancelled.set()
+                self.close_connection = True
+                return
+
             self.server.release.wait(8)
             try:
                 self.wfile.write(b"B\r\ndata: two\n\n\r\n0\r\n\r\n")
@@ -109,6 +116,7 @@ def upstream(label, port=0):
     with ThreadingHTTPServer(("127.0.0.1", port), Upstream) as server:
         server.label = label
         server.release = threading.Event()
+        server.cancelled = threading.Event()
         thread = threading.Thread(target=server.serve_forever)
         thread.start()
         try:
@@ -216,6 +224,7 @@ def test_requests(port):
     headers = {name.lower(): value for name, value in json.loads(body)["headers"].items()}
     assert headers["host"] == headers["x-forwarded-host"] == "demo.example:123"
     assert headers["x-forwarded-proto"] == "http" and headers["x-forwarded-for"] == "127.0.0.1"
+    assert headers["x-forwarded-port"] == "123"
     assert "x-remove" not in headers and "forwarded" not in headers
     assert headers["x-request-id"] == response_headers["X-Request-Id"] != "client-id"
 
@@ -237,6 +246,20 @@ def test_requests(port):
     assert request(port, "/api/" + "a" * 150)[0] == 414
     assert request(port, "/api/echo", "POST", b"x" * 4097)[0] == 413
 
+    status, _, _ = raw_request(
+        port, base + b"Transfer-Encoding: chunked\r\n\r\n1001\r\n" + b"a" * 4097 + b"\r\n0\r\n\r\n"
+    )
+    assert status == 413
+
+    with socket.create_connection(("127.0.0.1", port), timeout=4) as client:
+        client.sendall(base + b"Content-Length: 3\r\nExpect: 100-continue\r\n\r\n")
+        with client.makefile("rb") as reply:
+            assert reply.readline() == b"HTTP/1.1 100 Continue\r\n"
+            assert reply.readline() == b"\r\n"
+        client.sendall(b"abc")
+        status, _, body = receive(client)
+        assert status == 200 and json.loads(body)["body"] == "616263"
+
 
 def open_events(port, path):
     client = http.client.HTTPConnection("127.0.0.1", port, timeout=3)
@@ -255,6 +278,11 @@ def test_streams(port, api, process):
     assert request(port, "/api/slow")[0] == 504
     assert request(port, "/api/invalid")[0] == 502
     assert request(port, "/api/bad-framing")[0] == 502
+
+    client, response = open_events(port, "/api/cancel")
+    response.close()
+    client.close()
+    assert api.cancelled.wait(1.5), "Upstream connection stayed open after a client disconnected"
 
     try:
         request(port, "/api/broken")
@@ -292,9 +320,9 @@ def test_streams(port, api, process):
 
 def main():
     with tempfile.TemporaryDirectory() as directory, upstream("frontend") as frontend:
-        config = Path(directory) / "proxy.json"
         public = Path(directory) / "public"
         public.mkdir()
+        config = public / "proxy.json"
         (public / "asset.txt").write_text("asset")
         (public / ".env").write_text("private")
         port = free_port()
@@ -306,7 +334,7 @@ def main():
                 "max_body_bytes": 4096, "max_header_bytes": 1024, "max_target_bytes": 128,
                 "upstream_read_seconds": 2, "drain_seconds": 1
             },
-            "static": {"enabled": True, "root": "public", "index": "index.html"},
+            "static": {"enabled": True, "root": ".", "index": "index.html"},
             "upstreams": {
                 "api": f"http://localhost:{api_port}",
                 "frontend": f"http://127.0.0.1:{frontend.server_port}"
@@ -338,6 +366,7 @@ def main():
         config.write_text(json.dumps(settings))
         with running(config, "127.0.0.1", port):
             assert request(port, "/.env")[0] == 404
+            assert request(port, "/proxy.json")[0] == 404
 
         settings["routes"] = [
             {"path": "/", "match": "prefix", "action": "proxy", "upstream": "frontend"}
@@ -345,12 +374,13 @@ def main():
         config.write_text(json.dumps(settings))
         with running(config, "127.0.0.1", port):
             status, _, body = request(port, "/", headers={
-                "X-Forwarded-For": "192.0.2.42", "X-Forwarded-Proto": "https"
+                "Host": "[2001:db8::1]", "X-Forwarded-For": "192.0.2.42", "X-Forwarded-Proto": "https"
             })
             headers = json.loads(body)["headers"]
             assert status == 200
             assert headers["X-Forwarded-For"] == "192.0.2.42"
             assert headers["X-Forwarded-Proto"] == "https"
+            assert headers["X-Forwarded-Port"] == "443"
 
     print("Proxy integration checks passed")
 

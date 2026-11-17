@@ -17,6 +17,7 @@ struct ServerConfig {
     unsigned short port;
     bool static_enabled;
     std::filesystem::path root;
+    std::filesystem::path source;
     std::string index;
     std::map<std::string, Upstream> upstreams;
     std::vector<Route> routes;
@@ -104,6 +105,7 @@ inline ServerConfig load_config(const std::filesystem::path& path) {
         }
     }
 
+    config.source = std::filesystem::weakly_canonical(path);
     config.routes = load_routes(json, config.upstreams);
     config.workers = config_number(server, "workers", "server.workers", 1, 128, 8);
     config.queue = config_number(server, "queue", "server.queue", 1, 4096, 64);

@@ -11,7 +11,7 @@
 
 ## Project boundaries and layout
 
-- This is a small Linux C++20 static HTTP server for hackathons. Keep GNU Make, the `lttx` CLI, and `lottiex.json`; do not introduce another build system or framework without a request.
+- This is a small Linux C++20 HTTP server and reverse proxy for hackathons. Keep GNU Make, the `lttx` CLI, and `lottiex.json`; do not introduce another build system or framework without a request.
 - Application headers live in `includes/lottiex/`, not `include/`. The umbrella header is exactly `lottiex/LottieX.hpp`; case matters on Linux.
 - Networking uses cpp-httplib, not Asio. Keep the upstream header and its license together under `includes/cpp-httplib/`, and include it as `<cpp-httplib/httplib.h>`. Keep vendored upstream code unmodified when changing application behavior.
 - nlohmann/json is also vendored. Normal builds must work offline. Do not assume a dependency download script exists: README and Makefile currently mention `scripts/vendor.py`, but that file is absent. Do not recreate it as an unrelated change.
@@ -25,8 +25,8 @@
 
 ## Behavior that is easy to break
 
-- A relative static root is resolved against the configuration file's directory, not the process working directory. Hosts must be numeric IPv4/IPv6 addresses; `localhost` is intentionally rejected by configuration validation.
-- Serve GET and HEAD. HEAD sends the same content length as GET without the body. Missing files, disabled static serving, traversal attempts, and symlinks escaping the static root return 404. Other supported HTTP methods return 405 with `Allow: GET, HEAD`.
+- A relative static root is resolved against the configuration file's directory, not the process working directory. Listen addresses must be numeric IPv4/IPv6 addresses; `localhost` is intentionally rejected by configuration validation.
+- Serve static files with GET and HEAD. HEAD sends the same content length as GET without the body. Missing files, disabled static serving, traversal attempts, and symlinks escaping the static root return 404. Other supported HTTP methods on static routes return 405 with `Allow: GET, HEAD`.
 - Resolve directory indexes using `static.index`. Do not replace this with cpp-httplib's default mount behavior or a root index fallback for missing files.
 - Decode the path from `request.target` exactly once, excluding the query string. cpp-httplib's `request.path` is already decoded; decoding it again changes literal percent-encoded filenames and can undermine path checks.
 - Check containment by canonical path components, including after appending the index. A string-prefix check does not establish containment. Preserve checks against symlinks escaping the root.
@@ -34,11 +34,13 @@
 - Set `SO_REUSEADDR` explicitly. cpp-httplib's default can use `SO_REUSEPORT`, allowing a second server to bind the same address and port instead of reporting an error.
 - Do not call cpp-httplib's `stop()` immediately on SIGINT/SIGTERM: it can truncate active content-provider responses. The queue first rejects new work and drains accepted connections, then closes the listener when the pending count reaches zero. Pending work includes queued connections and incomplete request headers, not just running route handlers.
 - Block termination signals before creating worker threads and consume them in the signal-wait thread. Do not invoke server operations from an asynchronous signal handler.
-- Current limits are 8 workers, 64 queued connections, and 30-second read/write timeouts. Shutdown drains queued work using these network timeouts; it has no independent five-second or total 30-second deadline.
+- The default capacity is 8 workers with 64 queued connections and 30-second read/write timeouts. Static-only shutdown uses the network timeouts. A proxy configuration also starts a drain timer on termination and interrupts registered sockets when it expires.
+- The listener adapter uses cpp-httplib's stream to read proxy request bodies before ordinary content handling can parse multipart or decode content. Clear the library's parsed byte ranges for proxy routes so it does not apply a client's range twice to an upstream 206.
+- Upstream routing uses the raw escaped path and preserves the original query. Keep the body bounded and regenerate HTTP framing after removing hop-by-hop headers. A provider returns a failure on truncation so the downstream response cannot be mistaken for a complete stream.
 
 ## Verification
 
-- For networking or configuration changes, run `make release`, `python3 tests/smoke.py`, then `make debug` and the smoke test again.
+- For networking or configuration changes, run `make release`, `python3 tests/smoke.py`, then `make debug` and the smoke test again. Run `python3 tests/proxy.py` after the smoke test in both modes.
 - Both build modes write `build/lttx`, with separate object directories. Run `make release` last if leaving a release executable for the owner.
 - The smoke test launches real local servers and uses temporary files and symlinks. Its IPv6 listener check is skipped only when IPv6 loopback is unavailable.
 - Pure spacing or comment edits do not need another full build/test cycle; verify that code tokens are unchanged.

@@ -14,7 +14,8 @@ namespace lottiex {
 inline bool hop_header(const httplib::Headers& headers, const std::string& name) {
     constexpr std::string_view names[] = {
         "connection", "keep-alive", "proxy-connection", "proxy-authenticate",
-        "proxy-authorization", "te", "trailer", "transfer-encoding", "upgrade", "content-length"
+        "proxy-authorization", "proxy-authentication-info", "te", "trailer",
+        "transfer-encoding", "upgrade", "content-length"
     };
 
     return std::find(std::begin(names), std::end(names), name) != std::end(names) ||
@@ -90,10 +91,16 @@ inline httplib::Headers proxy_request_headers(const ServerConfig& config, const 
             request.get_header_value("X-Forwarded-Proto") == "https") scheme = "https";
     }
 
+    const auto colon = host.rfind(':');
+    const auto bracket = host.rfind(']');
+    const bool has_port = colon != std::string::npos && (bracket == std::string::npos || colon > bracket);
+    const auto port = has_port ? host.substr(colon + 1) : (std::string_view(scheme) == "https" ? "443" : "80");
+
     headers.emplace("Host", host);
     headers.emplace("X-Forwarded-Host", host);
     headers.emplace("X-Forwarded-For", peer);
     headers.emplace("X-Forwarded-Proto", scheme);
+    headers.emplace("X-Forwarded-Port", port);
     headers.emplace("X-Request-Id", connection.id);
     headers.emplace("Connection", "close");
 
@@ -121,20 +128,22 @@ inline void proxy_error(const Connection& connection, httplib::Error error) {
 class UpstreamConnection {
     Listener& listener;
     socket_t socket;
+    socket_t downstream;
     httplib::detail::SocketStream stream;
     httplib::detail::BodyReader reader;
     bool attached;
 
+    bool downstream_closed() const {
+        pollfd client{downstream, POLLRDHUP, 0};
+        return poll(&client, 1, 0) > 0 &&
+               (client.revents & (POLLRDHUP | POLLHUP | POLLERR | POLLNVAL));
+    }
+
 public:
-    UpstreamConnection(Listener& server, socket_t sock, const ServerConfig& config, socket_t downstream)
-        : listener(server), socket(sock), stream(sock, config.upstream_read_seconds, 0,
+    UpstreamConnection(Listener& server, socket_t sock, const ServerConfig& config, socket_t client)
+        : listener(server), socket(sock), downstream(client), stream(sock, config.upstream_read_seconds, 0,
           config.upstream_write_seconds, 0), attached(false) {
         reader.stream = &stream;
-        stream.set_read_interrupt([downstream] {
-            pollfd client{downstream, POLLRDHUP, 0};
-            return poll(&client, 1, 0) > 0 &&
-                   (client.revents & (POLLRDHUP | POLLHUP | POLLERR | POLLNVAL));
-        });
         attached = listener.attach(socket);
     }
 
@@ -203,6 +212,17 @@ public:
         reader.chunked = chunked;
         reader.has_content_length = known_length;
         reader.content_length = length;
+
+        if (!known_length) stream.set_read_interrupt([this] { return downstream_closed(); });
+    }
+
+    bool copy_buffered_body(std::size_t length, std::string& output) const {
+        std::size_t buffered = 0;
+        const auto* data = stream.buffered_data(buffered);
+        if (length > buffered) return false;
+
+        output.assign(data, length);
+        return true;
     }
 
     ssize_t read(char* data, std::size_t length, const httplib::Headers& headers) {
@@ -216,7 +236,12 @@ public:
     }
 
     httplib::Error read_error() const {
-        return reader.has_error() ? reader.last_error : httplib::Error::HTTPParsing;
+        if (!reader.has_error()) return httplib::Error::HTTPParsing;
+        if (reader.last_error == httplib::Error::Timeout && downstream_closed()) {
+            return httplib::Error::ConnectionClosed;
+        }
+
+        return reader.last_error;
     }
 };
 
@@ -256,7 +281,8 @@ inline void proxy_request(Listener& listener, const ServerConfig& config, const 
     response.status = result.status;
 
     const bool has_body = request.method != "HEAD" && httplib::detail::body_allowed_for_status(result.status);
-    if (has_body && (!known_length || length)) {
+    const bool buffered = has_body && known_length && length && upstream->copy_buffered_body(length, response.body);
+    if (has_body && !buffered && (!known_length || length)) {
         upstream->frame(chunked, known_length, length);
         const auto content_type = result.get_header_value("Content-Type");
         auto transfer = [upstream, &connection, known_length,

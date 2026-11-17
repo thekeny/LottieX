@@ -30,17 +30,21 @@ inline void serve_static(const ServerConfig& config, std::string_view decoded,
         const std::filesystem::path relative(decoded.substr(1));
 
         for (const auto& part : relative) {
-            if (part.native().starts_with('.')) return respond(response, 404);
+            if (part != "." && part.native().starts_with('.')) return respond(response, 404);
         }
 
         auto path = std::filesystem::weakly_canonical(config.root / relative);
         if (!inside_root(config.root, path)) return respond(response, 404);
 
-        if (std::filesystem::is_directory(path)) {
+        auto status = std::filesystem::status(path);
+        if (std::filesystem::is_directory(status)) {
             path = std::filesystem::weakly_canonical(path / config.index);
+            if (!inside_root(config.root, path)) return respond(response, 404);
+
+            status = std::filesystem::status(path);
         }
 
-        if (!inside_root(config.root, path) || !std::filesystem::is_regular_file(path)) return respond(response, 404);
+        if (path == config.source || !std::filesystem::is_regular_file(status)) return respond(response, 404);
 
         for (const auto& part : path.lexically_relative(config.root)) {
             if (part.native().starts_with('.')) return respond(response, 404);
@@ -55,7 +59,7 @@ inline void serve_static(const ServerConfig& config, std::string_view decoded,
         response.status = 200;
         response.set_content_provider(static_cast<std::size_t>(size), mime_type(path.extension().string()),
             [file, &connection](std::size_t offset, std::size_t length, httplib::DataSink& sink) {
-                std::array<char, 65536> chunk{};
+                std::array<char, 65536> chunk;
                 const auto count = static_cast<std::streamsize>(std::min(length, chunk.size()));
 
                 file->seekg(static_cast<std::streamoff>(offset));
