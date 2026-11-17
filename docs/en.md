@@ -38,15 +38,43 @@ The project uses GNU Make, [cpp-httplib](https://github.com/yhirose/cpp-httplib)
 | Linux | Sockets, POSIX signals and threads |
 | C++20 compiler and standard library | Building; the code uses `std::jthread`, `std::stop_token` and `std::osyncstream` |
 | GNU Make | Build management |
-| Python 3 | Only for `tests/smoke.py` |
+| Python 3 | Only for tests |
 | curl | Only for the HTTP examples below |
 
-From the project root:
+### Install with one command
+
+Without Git (requires curl and tar):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/thekeny/LottieX/master/install.sh | bash
+```
+
+Or from the project root:
+
+```bash
+./install.sh
+lttx check
+lttx run
+```
+
+The script builds release mode and installs `lttx` in `~/.local/bin`, without `sudo`. When piped from curl or run outside a checkout, it downloads the source archive from GitHub into a temporary directory and removes it on exit. Local installation works offline. GNU Make and a C++20 compiler must already be installed. If the directory is missing from `PATH`, run the printed command in your current terminal and add it to your shell configuration.
+
+Choose another prefix with `./install.sh --prefix /absolute/path` or the `PREFIX` environment variable. The executable goes into its `bin/` directory. Run the installer again to update; remove the installed `bin/lttx` file to uninstall.
+
+Use `lttx` from any directory. The `run` and `check` commands require a local `lottiex.json` or `--config /path/to/lottiex.json`. The installer does not copy configuration or site files.
+
+With curl and a custom prefix:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/thekeny/LottieX/master/install.sh | bash -s -- --prefix "$HOME/.local"
+```
+
+### Build without installation
 
 ```bash
 make release
-./build/lttx check
-./build/lttx run
+lttx check
+lttx run
 ```
 
 Open [http://127.0.0.1:8080](http://127.0.0.1:8080). You should see **LottieX is running.** from `public/index.html`. The supplied configuration listens on all IPv4 interfaces (`0.0.0.0:8080`).
@@ -83,8 +111,8 @@ lttx help
 `--config PATH` is available only for `run` and `check`. Without it, the CLI looks for `lottiex.json` in the current working directory. A relative `PATH` is also resolved from the working directory.
 
 ```bash
-./build/lttx check --config /srv/demo/lottiex.json
-./build/lttx run --config /srv/demo/lottiex.json
+lttx check --config /srv/demo/lottiex.json
+lttx run --config /srv/demo/lottiex.json
 ```
 
 Successful CLI completion returns exit code `0`; an error returns `1` and writes `lttx: ...` to stderr. `check` does not open a listening socket or verify that the port is available.

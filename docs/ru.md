@@ -38,15 +38,43 @@
 | Linux | Сокеты, POSIX-сигналы и потоки |
 | Компилятор и стандартная библиотека C++20 | Сборка; используются `std::jthread`, `std::stop_token`, `std::osyncstream` |
 | GNU Make | Управление сборкой |
-| Python 3 | Только запуск `tests/smoke.py` |
+| Python 3 | Только запуск tests |
 | curl | Только примеры запросов ниже |
 
-Из корня проекта:
+### Установка одной командой
+
+Без Git (нужны curl и tar):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/thekeny/LottieX/master/install.sh | bash
+```
+
+Или из корня проекта:
+
+```bash
+./install.sh
+lttx check
+lttx run
+```
+
+Скрипт сам выполняет release-сборку и устанавливает `lttx` в `~/.local/bin`, без `sudo`. При запуске через curl или вне репозитория он скачивает архив исходников с GitHub во временный каталог и удаляет его при завершении. Установка из локального репозитория работает без интернета. GNU Make и компилятор C++20 должны быть установлены заранее. Если каталог отсутствует в `PATH`, скрипт выведет команду для добавления — выполните её в текущем терминале и добавьте в настройки своей оболочки.
+
+Другой каталог установки: `./install.sh --prefix /абсолютный/путь` или переменная `PREFIX`. Исполняемый файл попадёт в подкаталог `bin/`. Для обновления повторите установку; для удаления удалите установленный файл `bin/lttx`.
+
+Команда `lttx` доступна из любой директории. Для `run` и `check` нужен `lottiex.json` в текущей директории либо аргумент `--config /путь/к/lottiex.json`. Установщик не копирует конфигурацию и файлы сайта.
+
+Установка через curl с выбором каталога:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/thekeny/LottieX/master/install.sh | bash -s -- --prefix "$HOME/.local"
+```
+
+### Сборка без установки
 
 ```bash
 make release
-./build/lttx check
-./build/lttx run
+lttx check
+lttx run
 ```
 
 Откройте [http://127.0.0.1:8080](http://127.0.0.1:8080). Должна появиться страница **LottieX is running.** из `public/index.html`. По умолчанию сервер доступен на всех IPv4-интерфейсах (`0.0.0.0:8080`).
@@ -83,8 +111,8 @@ lttx help
 `--config PATH` доступен только для `run` и `check`. Без него ищется `lottiex.json` в текущей рабочей директории. Относительный `PATH` также отсчитывается от рабочей директории.
 
 ```bash
-./build/lttx check --config /srv/demo/lottiex.json
-./build/lttx run --config /srv/demo/lottiex.json
+lttx check --config /srv/demo/lottiex.json
+lttx run --config /srv/demo/lottiex.json
 ```
 
 Успешное завершение CLI возвращает код `0`; ошибка — `1` и сообщение `lttx: ...` в stderr. `check` не открывает слушающий сокет и не проверяет, свободен ли порт.

@@ -35,15 +35,19 @@ LottieX serves HTML, CSS, JavaScript, images and other files from a directory of
 
 You need Linux, GNU Make and a compiler with a C++20 standard library. Python 3 is required only for smoke tests; `curl` is used in the HTTP examples.
 
-From the project root:
+Install without Git (requires curl and tar):
 
 ```bash
-make release
-./build/lttx check
-./build/lttx run
+curl -fsSL https://raw.githubusercontent.com/thekeny/LottieX/master/install.sh | bash
 ```
 
-Open [http://127.0.0.1:8080](http://127.0.0.1:8080). The supplied configuration listens on `0.0.0.0:8080` (all IPv4 interfaces) and serves [`public/`](public/). Press **Ctrl+C** to stop.
+Or install from a local checkout:
+
+```bash
+./install.sh
+lttx check
+lttx run
+```
 
 ## Configuration
 
@@ -61,8 +65,8 @@ A relative `static.root` is resolved against the configuration file's directory.
 To use a different configuration file:
 
 ```bash
-./build/lttx check --config /path/to/lottiex.json
-./build/lttx run --config /path/to/lottiex.json
+lttx check --config /path/to/lottiex.json
+lttx run --config /path/to/lottiex.json
 ```
 
 All fields are required. See the [English](docs/en.md#4-configuration) or [Russian](docs/ru.md#4-конфигурация) reference for field types, validation rules and examples.
@@ -71,10 +75,10 @@ All fields are required. See the [English](docs/en.md#4-configuration) or [Russi
 
 | Command | Purpose |
 | :--- | :--- |
-| `./build/lttx run [--config PATH]` | Start the server |
-| `./build/lttx check [--config PATH]` | Validate configuration |
-| `./build/lttx version` | Show the version |
-| `./build/lttx help` | Show usage; also displayed when invoked without arguments |
+| `lttx run [--config PATH]` | Start the server |
+| `lttx check [--config PATH]` | Validate configuration |
+| `lttx version` | Show the version |
+| `lttx help` | Show usage; also displayed when invoked without arguments |
 | `make release` | Build with `-O2 -DNDEBUG` |
 | `make debug` | Build with `-O0 -g` |
 | `make clean` | Remove build artifacts |
@@ -104,10 +108,8 @@ make release
 
 LottieX serves static files over HTTP/1.1. The current version has no HTTPS, REST API, proxying, SPA fallback, built-in caching, directory listings or daemon mode. A missing file returns 404; `index.html` is used only when the requested path resolves to a directory. Each connection closes after its response.
 
-## Documentation and dependencies
+## Dependencies
 
-- [English reference](docs/en.md): build, CLI, configuration, HTTP behavior, internals and troubleshooting.
-- [Russian reference](docs/ru.md): the same guide in Russian.
 - [cpp-httplib](https://github.com/yhirose/cpp-httplib): networking; [bundled license](includes/cpp-httplib/LICENSE).
 - [nlohmann/json](https://github.com/nlohmann/json): JSON parsing; [bundled license](includes/nlohmann/LICENSE).
 
