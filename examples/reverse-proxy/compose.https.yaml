@@ -1,0 +1,35 @@
+services:
+  lottiex:
+    networks:
+      apps:
+      edge:
+
+  grafana:
+    environment:
+      GF_SECURITY_COOKIE_SECURE: "true"
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN for HTTPS}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - certificates:/data
+      - caddy_config:/config
+    networks:
+      edge:
+        ipv4_address: 172.29.251.2
+
+networks:
+  edge:
+    ipam:
+      config:
+        - subnet: 172.29.251.0/24
+
+volumes:
+  certificates:
+  caddy_config:

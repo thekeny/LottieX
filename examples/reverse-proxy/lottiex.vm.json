@@ -1,0 +1,14 @@
+{
+  "server": { "host": "0.0.0.0", "port": 8080 },
+  "static": { "enabled": false, "root": "./public", "index": "index.html" },
+  "upstreams": {
+    "frontend": "http://127.0.0.1:3000",
+    "backend": "http://127.0.0.1:8000",
+    "grafana": "http://127.0.0.1:3001"
+  },
+  "routes": [
+    { "path": "/api", "match": "prefix", "action": "proxy", "upstream": "backend", "strip_prefix": true },
+    { "path": "/grafana", "match": "prefix", "action": "proxy", "upstream": "grafana" },
+    { "path": "/", "match": "prefix", "action": "proxy", "upstream": "frontend" }
+  ]
+}

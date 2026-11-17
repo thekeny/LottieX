@@ -1,0 +1,3 @@
+{$DOMAIN} {
+	reverse_proxy lottiex:8080
+}

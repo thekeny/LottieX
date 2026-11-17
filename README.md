@@ -1,7 +1,7 @@
 <div align="center">
   <img src="public/logo.png" alt="LottieX" width="336">
   <h1>LottieX</h1>
-  <p><strong>A small C++20 HTTP server for static sites and hackathon demos.</strong></p>
+  <p><strong>A small C++20 HTTP server and reverse proxy for hackathon demos.</strong></p>
   <p>
     <img src="https://img.shields.io/badge/version-0.1.0-2ea44f" alt="Version 0.1.0">
     <img src="https://img.shields.io/badge/C%2B%2B-20-00599C?logo=cplusplus" alt="C++20">
@@ -18,12 +18,13 @@
 
 ---
 
-LottieX serves HTML, CSS, JavaScript, images and other files from a directory of your choice. A single `lttx` executable, a `lottiex.json` configuration file and a GNU Make build are all you need to serve a landing page, documentation or a built frontend demo.
+LottieX serves HTML, CSS, JavaScript, images and other files from a directory of your choice. A single `lttx` executable, a `lottiex.json` configuration file and a GNU Make build are all you need to serve a static site or put multiple HTTP applications behind one address.
 
 ## Features
 
 - **Static file serving:** GET and HEAD, extension-based MIME types and configurable directory indexes.
-- **JSON configuration:** numeric IPv4/IPv6 address, port, static root and a switch to enable or disable file serving.
+- **Reverse proxy:** exact and segment-prefix routes, optional prefix stripping, request bodies, redirects, cookies and streaming SSR/SSE.
+- **JSON configuration:** numeric IPv4/IPv6 listener, DNS names for upstream services, and configurable limits and timeouts.
 - **Configuration validation:** the `check` command validates settings and the static root without starting the server.
 - **Path containment:** requests containing `..` and symlinks that resolve outside the static root receive 404.
 - **File streaming:** files are read in blocks of up to 64 KiB without loading the entire file into a response string.
@@ -69,7 +70,7 @@ lttx check --config /path/to/lottiex.json
 lttx run --config /path/to/lottiex.json
 ```
 
-All fields are required. See the [English](docs/en.md#4-configuration) or [Russian](docs/ru.md#4-конфигурация) reference for field types, validation rules and examples.
+Fields in the example are required. Routing and server limits are optional. See the [English](docs/en.md#4-configuration) or [Russian](docs/ru.md#4-конфигурация) reference for field types, validation rules and examples.
 
 ## Commands
 
@@ -85,6 +86,10 @@ All fields are required. See the [English](docs/en.md#4-configuration) or [Russi
 
 Both build modes write `build/lttx` and use separate object directories.
 
+## Deploy a stack on one VM
+
+Set your HTTP service addresses and routes in `lottiex.json`. The included Docker Compose and VM examples connect Next.js, FastAPI, PostgreSQL and Grafana. The public HTTPS variant starts Caddy for automatic certificates and keeps the LottieX port internal. [Deployment instructions](examples/reverse-proxy/README.md)
+
 ## Verification
 
 With the server running, use another terminal:
@@ -99,14 +104,16 @@ Smoke tests start their own local servers:
 ```bash
 make release
 python3 tests/smoke.py
+python3 tests/proxy.py
 make debug
 python3 tests/smoke.py
+python3 tests/proxy.py
 make release
 ```
 
 ## Scope
 
-LottieX serves static files over HTTP/1.1. The current version has no HTTPS, REST API, proxying, SPA fallback, built-in caching, directory listings or daemon mode. A missing file returns 404; `index.html` is used only when the requested path resolves to a directory. Each connection closes after its response.
+LottieX serves and proxies HTTP/1.1, with one request per connection. A directory index comes from `static.index` and missing files return 404. Caddy handles public TLS in the deployment example. The HTTP proxy supports SSR and SSE. Applications that use Grafana Live require WebSocket support.
 
 ## Dependencies
 

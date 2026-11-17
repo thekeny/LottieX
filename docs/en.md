@@ -2,7 +2,7 @@
 
 <div align="center">
   <img src="../public/logo.png" alt="LottieX" width="336">
-  <p><strong>A C++20 static HTTP server for Linux, hackathons and small demos.</strong></p>
+  <p><strong>A C++20 HTTP server and reverse proxy for Linux, hackathons and small demos.</strong></p>
   <p><a href="ru.md">Русский</a> • <strong>English</strong> • <a href="../README.md">README</a></p>
 </div>
 
@@ -23,7 +23,7 @@
 
 ## 1. Overview
 
-**LottieX 0.1.0** serves files from a selected directory over HTTP/1.1. Use it for a static frontend, landing page, local documentation or a hackathon demo.
+**LottieX 0.1.0** serves files and routes requests to your applications over HTTP/1.1. See the [VM and Compose deployment examples](../examples/reverse-proxy/README.md) for HTTP and public HTTPS.
 
 Features include GET and HEAD, directory indexes, MIME types, IPv4/IPv6, JSON configuration validation, file streaming and draining accepted work on shutdown.
 
@@ -73,8 +73,8 @@ curl -fsSL https://raw.githubusercontent.com/thekeny/LottieX/master/install.sh |
 
 ```bash
 make release
-lttx check
-lttx run
+./build/lttx check
+./build/lttx run
 ```
 
 Open [http://127.0.0.1:8080](http://127.0.0.1:8080). You should see **LottieX is running.** from `public/index.html`. The supplied configuration listens on all IPv4 interfaces (`0.0.0.0:8080`).
@@ -145,6 +145,10 @@ All listed fields are required. The table shows example values, not defaults ins
 | `static.root` | string | `"./public"` | Nonempty path; must exist and be a directory when serving is enabled |
 | `static.index` | string | `"index.html"` | Nonempty relative path without `..` components |
 
+### Reverse proxy
+
+Add optional `upstreams` and `routes` fields to connect applications. The config checker validates the schema without contacting the upstream services. See the [proxy settings and routing rules](proxy.md).
+
 ### Listening address
 
 | Address | Meaning |
@@ -160,7 +164,7 @@ All listed fields are required. The table shows example values, not defaults ins
 
 `static.root` is resolved against the **configuration file's directory**. With a configuration at `/srv/demo/lottiex.json`, `"root": "./public"` refers to `/srv/demo/public`, regardless of the process working directory.
 
-With `static.enabled: false`, the directory does not need to exist, but all other fields and their formats are still required. GET and HEAD return 404.
+With `static.enabled: false`, the directory does not need to exist, but all other fields and their formats are still required. GET and HEAD on static routes return 404.
 
 Restart the server to apply configuration changes. The `check` command does not verify individual files or the existence of an index page.
 
@@ -195,7 +199,7 @@ The path is decoded from the original URL exactly once. For example, `/%252e%252
 | Invalid path or unsuitable request format | `400` |
 | Failure opening an existing file or a filesystem error | `500` |
 
-The server expects HTTP/1.1 with exactly one nonempty `Host` header. Requests with `Transfer-Encoding` or a `Content-Length` other than `0` are rejected. Request format validation precedes method validation, so an invalid request can receive 400 instead of 405.
+The server expects HTTP/1.1 with exactly one nonempty `Host` header. Static routes reject requests with `Transfer-Encoding` or a `Content-Length` other than `0`. Paths with hidden components such as `.env` return 404. Request format validation precedes method validation, so an invalid request can receive 400 instead of 405.
 
 Responses include `Server: LottieX` and `Connection: close`. The connection closes after each response.
 
@@ -232,7 +236,7 @@ Expected statuses: `200`, `200`, `404`, `405`, `404`.
 
 ## 6. Architecture and limits
 
-Request flow: **cpp-httplib → connection queue → HTTP and path validation → file → content provider → response**.
+Request flow: **cpp-httplib → connection queue → HTTP and path validation → route → file or upstream → content provider → response**.
 
 | Parameter | Value |
 | :--- | :--- |
@@ -243,11 +247,11 @@ Request flow: **cpp-httplib → connection queue → HTTP and path validation �
 | Read / write timeout | 30 seconds each |
 | Requests per connection | 1 |
 
-These limits are defined in code and cannot be configured through JSON. Files are sent through a content provider without loading the whole file into a response string. When the queue is full, the new connection is closed; an HTTP 503 response is not guaranteed.
+The table shows defaults. Configure server limits as described in the [proxy reference](proxy.md). Files are sent through a content provider without loading the whole file into a response string. When the queue is full, the new connection is closed; an HTTP 503 response is not guaranteed.
 
-A dedicated signal-wait thread handles SIGINT and SIGTERM. The server stops queuing new connections and drains accepted work, including queued connections and incomplete request headers. It then closes the listening socket. There is no separate total shutdown deadline: draining uses the network timeouts, and full shutdown can take longer than 30 seconds.
+A dedicated signal-wait thread handles SIGINT and SIGTERM. The server stops queuing new connections and drains accepted work, including queued connections and incomplete request headers. It then closes the listening socket. A configuration with upstreams applies the `server.drain_seconds` deadline to active sockets. A static-only configuration drains using the network timeouts.
 
-The current version does not implement HTTPS, REST APIs, proxying, built-in caching, SPA fallback, automatic configuration reload or a daemon mode.
+Caddy handles public TLS. The [proxy reference](proxy.md) describes forwarding, logs and response streaming.
 
 ## 7. Verification and troubleshooting
 
@@ -256,8 +260,10 @@ The current version does not implement HTTPS, REST APIs, proxying, built-in cach
 ```bash
 make release
 python3 tests/smoke.py
+python3 tests/proxy.py
 make debug
 python3 tests/smoke.py
+python3 tests/proxy.py
 make release
 ```
 
@@ -268,10 +274,8 @@ Tests start real local servers and create temporary files and symlinks. They cov
 | Message or symptom | What to check |
 | :--- | :--- |
 | `Cannot open configuration` | The path after `--config`; otherwise, `lottiex.json` in the working directory |
-| `Invalid configuration field types` | Port must be a number, `enabled` a boolean, paths and address strings |
-| `Host must be a numeric IP address` | Replace the hostname with a numeric IPv4/IPv6 address |
-| `Port must be in 1..65535` | Port range |
-| `Invalid index path` | The index must be nonempty, relative and contain no `..` components |
+| `Invalid configuration field: ...` | Check the named field against the configuration reference |
+| 502 or 504 | Check the service address or timeout in the [deployment guide](../examples/reverse-proxy/README.md#диагностика) |
 | `Cannot listen on ...` | The address is assigned locally, the port is available, and the process can bind it |
 | 404 for `/` | Serving is enabled and `static.root` contains the `static.index` file |
 | 404 for an existing file | The root is relative to the configuration, the path and case are correct, and any symlink stays inside the root |
@@ -279,7 +283,7 @@ Tests start real local servers and create temporary files and symlinks. They cov
 
 There is no `scripts/vendor.py` in this repository; it is not required to build. Missing fields and JSON syntax errors may produce messages directly from nlohmann/json.
 
-On startup, the server prints its version and address. Request logs include the method, original target and status, such as `GET / 200`. Configuration and handler errors go to stderr.
+On startup, the server prints its version and address. Access logs include UTC time, request ID, method, path without the query string, status, elapsed microseconds, response body bytes and upstream. Upstream errors go to stderr with the same request ID.
 
 ## 8. Project layout and license
 
@@ -293,12 +297,12 @@ LottieX/
 │   │   ├── LottieX.hpp           # umbrella header
 │   │   ├── config.hpp           # JSON loading and validation
 │   │   ├── http.hpp             # version, URL decoding, MIME
-│   │   └── server.hpp           # server, queue, files, shutdown
+│   │   └── server.hpp           # routing, queue and shutdown
 │   ├── cpp-httplib/             # library and license
 │   └── nlohmann/                # library and license
 ├── public/                      # static files and logo
 ├── docs/                        # ru.md and en.md
-└── tests/smoke.py
+└── tests/                       # static and proxy integration checks
 ```
 
 Include application headers with `<lottiex/LottieX.hpp>` and the `-Iincludes` search path. Filename case matters on Linux.
