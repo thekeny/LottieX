@@ -4,16 +4,13 @@
 #pragma once
 
 #include <lottiex/config.hpp>
-#include <lottiex/http.hpp>
-#include <cpp-httplib/httplib.h>
+#include <lottiex/proxy.hpp>
+#include <lottiex/static.hpp>
 
-#include <array>
 #include <atomic>
 #include <cerrno>
 #include <csignal>
 #include <iostream>
-#include <limits>
-#include <memory>
 #include <mutex>
 #include <pthread.h>
 #include <syncstream>
@@ -26,13 +23,14 @@ class Server {
     std::mutex requests_mutex;
     std::size_t pending_requests = 0;
     bool draining = false;
-    httplib::Server server;
+    Listener server;
     class RequestQueue : public httplib::TaskQueue {
         Server& owner;
-        httplib::ThreadPool workers{8, 8, 64};
+        httplib::ThreadPool workers;
 
     public:
-        explicit RequestQueue(Server& server) : owner(server) {}
+        explicit RequestQueue(Server& server)
+            : owner(server), workers(server.config.workers, server.config.workers, server.config.queue) {}
 
         bool enqueue(std::function<void()> job) override {
             std::lock_guard lock(owner.requests_mutex);
@@ -66,75 +64,49 @@ class Server {
         void shutdown() override { workers.shutdown(); }
     };
 
-    bool inside_root(const std::filesystem::path& path) const {
-        auto part = path.begin();
+    void handle(const httplib::Request& request, httplib::Response& response) {
+        auto& connection = Listener::connection();
+        response.set_header("X-Request-Id", connection.id);
 
-        for (const auto& root_part : config.root) {
-            if (part == path.end() || *part++ != root_part) return false;
-        }
-
-        return true;
-    }
-
-    static void respond(httplib::Response& response, int status) {
-        response.status = status;
-        response.set_content(std::string(httplib::status_message(status)) + "\n", "text/plain; charset=utf-8");
-
-        if (status == 405) response.set_header("Allow", "GET, HEAD");
-    }
-
-    void handle(const httplib::Request& request, httplib::Response& response) const {
         if (request.version != "HTTP/1.1" || request.get_header_value_count("Host") != 1 ||
-            request.get_header_value("Host").find_first_not_of(" \t") == std::string::npos ||
-            request.has_header("Transfer-Encoding") ||
-            (request.has_header("Content-Length") && request.get_header_value("Content-Length") != "0")) {
+            request.get_header_value_count("Content-Length") > 1 ||
+            (request.has_header("Transfer-Encoding") && request.has_header("Content-Length"))) {
             return respond(response, 400);
         }
 
-        if (request.method != "GET" && request.method != "HEAD") return respond(response, 405);
-        std::string decoded;
+        if (request.target.size() > config.max_target_bytes) return respond(response, 414);
 
-        if (!decode_path(request.target, decoded)) return respond(response, 400);
-        if (!config.static_enabled) return respond(response, 404);
-
-        try {
-            const std::filesystem::path relative(decoded.substr(1));
-
-            for (const auto& part : relative) {
-                if (part == "..") return respond(response, 404);
-            }
-
-            auto path = std::filesystem::weakly_canonical(config.root / relative);
-            if (!inside_root(path)) return respond(response, 404);
-
-            if (std::filesystem::is_directory(path)) {
-                path = std::filesystem::weakly_canonical(path / config.index);
-            }
-
-            if (!inside_root(path) || !std::filesystem::is_regular_file(path)) return respond(response, 404);
-
-            auto file = std::make_shared<std::ifstream>(path, std::ios::binary);
-            if (!*file) return respond(response, 500);
-
-            const auto size = std::filesystem::file_size(path);
-            if (size > std::numeric_limits<std::size_t>::max()) return respond(response, 500);
-
-            response.status = 200;
-            response.set_content_provider(static_cast<std::size_t>(size), mime_type(path.extension().string()),
-                [file](std::size_t offset, std::size_t length, httplib::DataSink& sink) {
-                    std::array<char, 65536> chunk{};
-                    const auto count = static_cast<std::streamsize>(std::min(length, chunk.size()));
-
-                    file->seekg(static_cast<std::streamoff>(offset));
-                    file->read(chunk.data(), count);
-                    if (file->gcount() != count) return false;
-
-                    return sink.write(chunk.data(), static_cast<std::size_t>(count));
-                });
-        } catch (const std::filesystem::filesystem_error& error) {
-            std::osyncstream(std::cerr) << "Static file error: " << error.what() << '\n';
-            respond(response, 500);
+        std::size_t header_bytes = 0;
+        for (const auto& [name, value] : request.headers) {
+            header_bytes += name.size() + value.size() + 4;
         }
+
+        if (header_bytes > config.max_header_bytes) return respond(response, 431);
+
+        const auto target = std::string_view(request.target).substr(0, request.target.find('?'));
+        const auto* route = match_route(config.routes, target);
+        const bool proxy = route && !route->upstream.empty();
+
+        if (!proxy && (request.has_header("Transfer-Encoding") ||
+            (request.has_header("Content-Length") && request.get_header_value("Content-Length") != "0"))) {
+            return respond(response, 400);
+        }
+
+        const bool read = request.method == "GET" || request.method == "HEAD";
+        const bool api_method = request.method == "POST" || request.method == "PUT" ||
+            request.method == "PATCH" || request.method == "DELETE" || request.method == "OPTIONS";
+
+        if (!read && !(proxy && api_method)) {
+            response.set_header("Allow", proxy ? "GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS" : "GET, HEAD");
+            return respond(response, 405);
+        }
+
+        std::string decoded;
+        if (!decode_path(request.target, decoded)) return respond(response, 400);
+
+        if (proxy) return proxy_request(server, config, *route, request, response, connection);
+
+        serve_static(config, decoded, response, connection);
     }
 
 public:
@@ -148,9 +120,17 @@ public:
         server.set_address_family(config.host.find(':') == std::string::npos ? AF_INET : AF_INET6);
         server.set_default_headers({{"Server", "LottieX"}, {"Connection", "close"}});
 
-        server.set_read_timeout(30);
-        server.set_write_timeout(30);
+        server.set_read_timeout(config.client_read_seconds);
+        server.set_write_timeout(config.client_write_seconds);
         server.set_keep_alive_max_count(1);
+
+        server.set_request_setup([this](httplib::Request& request) {
+            if (request.ranges.empty()) return;
+
+            const auto target = std::string_view(request.target).substr(0, request.target.find('?'));
+            const auto* route = match_route(config.routes, target);
+            if (route && !route->upstream.empty()) request.ranges.clear();
+        });
 
         server.set_pre_routing_handler([this](const httplib::Request& request, httplib::Response& response) {
             handle(request, response);
@@ -158,16 +138,22 @@ public:
         });
 
         server.set_error_handler([](const httplib::Request&, httplib::Response& response) {
-            if (response.body.empty()) respond(response, response.status);
+            const auto& connection = Listener::connection();
+            if (!response.has_header("X-Request-Id")) response.set_header("X-Request-Id", connection.id);
+            if (!connection.proxied && response.body.empty()) respond(response, response.status);
         });
 
         server.set_exception_handler([](const httplib::Request&, httplib::Response& response, std::exception_ptr) {
-            std::osyncstream(std::cerr) << "Request handler failed\n";
+            std::osyncstream(std::cerr) << "request_id=" << Listener::connection().id << " request handler failed\n";
             respond(response, 500);
         });
 
         server.set_logger([](const httplib::Request& request, const httplib::Response& response) {
-            std::osyncstream(std::cout) << request.method << ' ' << request.target << ' ' << response.status << std::endl;
+            auto& connection = Listener::connection();
+            connection.method = request.method;
+            connection.path = request.target.substr(0, request.target.find('?'));
+            connection.status = response.status;
+            if (request.method != "HEAD") connection.bytes = response.body.size();
         });
     }
 
@@ -196,11 +182,17 @@ public:
 
         try {
             signal_thread = std::jthread([this, signals, &stopping](std::stop_token token) {
+                auto deadline = Clock::time_point::max();
+
                 while (!token.stop_requested()) {
                     const timespec timeout{0, 100000000};
                     const int signal = sigtimedwait(&signals, nullptr, &timeout);
 
                     if (signal == SIGINT || signal == SIGTERM) {
+                        if (!stopping && !config.upstreams.empty()) {
+                            deadline = Clock::now() + std::chrono::seconds(config.drain_seconds);
+                        }
+
                         stopping = true;
                         std::lock_guard lock(requests_mutex);
                         draining = true;
@@ -212,7 +204,15 @@ public:
 
                     if (stopping) {
                         std::lock_guard lock(requests_mutex);
-                        if (pending_requests == 0) server.stop();
+                        if (pending_requests == 0) {
+                            server.stop();
+                            return;
+                        }
+
+                        if (Clock::now() >= deadline) {
+                            server.expire();
+                            deadline = Clock::time_point::max();
+                        }
                     }
                 }
             });
