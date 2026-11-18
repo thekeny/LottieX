@@ -1,0 +1,183 @@
+@import "tailwindcss";
+
+@theme {
+    --color-bg: #06271e;
+    --color-panel: #032017;
+    --color-surface: #0b382a;
+    --color-ink: #edf1e9;
+    --color-muted: #afc4b7;
+    --color-mint: #a9f58c;
+    --color-line: #426b54;
+    --color-accent: #ff825f;
+    --color-card: #215b3f;
+    --color-card-text: #c0d2c4;
+    --color-card-ink: #34573b;
+    --color-on-mint: #153d27;
+    --font-sans: Arial, Helvetica, sans-serif;
+    --font-mono: "Courier New", monospace;
+}
+
+@layer base {
+    html {
+        scroll-padding-top: 104px;
+        scroll-behavior: smooth;
+        color-scheme: dark;
+    }
+
+    @media (max-width: 760px) {
+        html {
+            scroll-padding-top: 84px;
+        }
+    }
+
+    body {
+        margin: 0;
+        background: var(--color-bg);
+        color: var(--color-ink);
+        font-family: var(--font-sans);
+        font-size: 16px;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    p {
+        line-height: 1.5;
+    }
+
+    button,
+    input,
+    select {
+        font: inherit;
+    }
+
+    button,
+    a,
+    input,
+    select,
+    summary {
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    a {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    button {
+        cursor: pointer;
+    }
+
+    img {
+        display: block;
+        max-width: 100%;
+        image-rendering: pixelated;
+    }
+
+    button:focus-visible,
+    a:focus-visible,
+    summary:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    [tabindex]:focus-visible {
+        outline: 2px solid var(--color-mint);
+        outline-offset: 5px;
+    }
+}
+
+.wrap {
+    width: min(1280px, calc(100% - 80px));
+    margin-inline: auto;
+}
+
+@media (max-width: 1050px) {
+    .wrap {
+        width: calc(100% - 48px);
+    }
+}
+
+@media (max-width: 760px) {
+    .wrap {
+        width: calc(100% - 40px);
+    }
+}
+
+/* Pixel barcode divider from the original landing design. */
+.barcode {
+    --barcode-color: var(--color-mint);
+    height: 28px;
+    width: 100%;
+    background: linear-gradient(
+        90deg,
+        var(--barcode-color) 0 5%, transparent 5% 6%, var(--barcode-color) 6% 6.5%, transparent 6.5% 7.2%,
+        var(--barcode-color) 7.2% 8%, transparent 8% 8.5%, var(--barcode-color) 8.5% 9%, transparent 9% 10%,
+        var(--barcode-color) 10% 10.5%, transparent 10.5% 11%, var(--barcode-color) 11% 11.5%, transparent 11.5% 12.3%,
+        var(--barcode-color) 12.3% 16%, transparent 16% 19%, var(--barcode-color) 19% 24%, transparent 24% 25%,
+        var(--barcode-color) 25% 25.4%, transparent 25.4% 26%, var(--barcode-color) 26% 26.4%, transparent 26.4% 27%,
+        var(--barcode-color) 27% 27.4%, transparent 27.4% 28%, var(--barcode-color) 28% 28.4%, transparent 28.4% 32%,
+        var(--barcode-color) 32% 63%, transparent 63% 64%, var(--barcode-color) 64% 65%, transparent 65% 66%,
+        var(--barcode-color) 66% 66.5%, transparent 66.5% 67.5%, var(--barcode-color) 67.5% 68%, transparent 68% 69%,
+        var(--barcode-color) 69% 69.5%, transparent 69.5% 70.3%, var(--barcode-color) 70.3% 71%, transparent 71% 72%,
+        var(--barcode-color) 72% 72.4%, transparent 72.4% 73.5%, var(--barcode-color) 73.5% 74%, transparent 74% 75.5%,
+        var(--barcode-color) 75.5% 76%, transparent 76% 79%, var(--barcode-color) 79% 83%, transparent 83% 85%,
+        var(--barcode-color) 85% 100%
+    );
+}
+
+.barcode-light {
+    --barcode-color: #d7e0d9;
+}
+
+@keyframes pixel-enter {
+    from {
+        transform: translateY(16px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes content-enter {
+    from {
+        opacity: 0;
+        visibility: hidden;
+    }
+    to {
+        opacity: 1;
+        visibility: visible;
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    [data-intro] .hero-logo {
+        animation: pixel-enter 0.7s steps(6, end) both;
+    }
+
+    [data-intro] .header,
+    [data-intro] .hero-bottom,
+    [data-intro] main > section:not(.hero),
+    [data-intro] .footer {
+        animation: content-enter 0.6s ease-out 0.7s both;
+    }
+
+    [data-intro="pending"] .hero-logo,
+    [data-intro="pending"] .header,
+    [data-intro="pending"] .hero-bottom,
+    [data-intro="pending"] main > section:not(.hero),
+    [data-intro="pending"] .footer {
+        animation-play-state: paused;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+        animation: none !important;
+        transition: none !important;
+    }
+}

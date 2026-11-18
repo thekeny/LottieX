@@ -21,7 +21,6 @@ Thumbs.db
 
 docs/.agents/
 .taste-skill/
-website/
 
 # Deployment secrets
 /examples/reverse-proxy/.env
