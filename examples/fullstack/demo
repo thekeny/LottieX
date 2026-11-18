@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
+
+mode=http
+if [[ ${1:-} == --https ]]; then
+    mode=https
+    shift
+fi
+
+compose=(docker compose --env-file .env -f compose.yaml -f "compose.$mode.yaml")
+
+case ${1:-} in
+    up)
+        if [[ ! -e .env ]]; then
+            umask 077
+            pg_password=$(openssl rand -hex 24)
+            demo_password=$(openssl rand -hex 24)
+            (set -o noclobber
+                printf 'POSTGRES_PASSWORD=%s\nDEMO_PASSWORD=%s\nDOMAIN=\n' \
+                    "$pg_password" "$demo_password" > .env)
+        fi
+
+        "${compose[@]}" up --build --wait
+        if [[ $mode == http ]]; then
+            printf '%s\n' 'Open http://127.0.0.1:8080'
+        else
+            printf '%s\n' 'Open the HTTPS domain configured in .env'
+        fi
+        printf '%s\n' 'Sign in as demo with DEMO_PASSWORD from examples/fullstack/.env'
+        ;;
+    logs) "${compose[@]}" logs -f ;;
+    restart) "${compose[@]}" restart ;;
+    down) "${compose[@]}" down ;;
+    *) printf 'Usage: %s [--https] {up|logs|restart|down}\n' "$0" >&2; exit 2 ;;
+esac

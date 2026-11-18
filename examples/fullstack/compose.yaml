@@ -1,0 +1,70 @@
+services:
+  lottiex:
+    build: ../..
+    stop_grace_period: 35s
+    volumes:
+      - ./lottiex.json:/etc/lottiex/lottiex.json:ro
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    networks:
+      - web
+      - api
+
+  frontend:
+    build: ./frontend
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 3s
+      timeout: 3s
+      retries: 15
+    networks:
+      - web
+
+  backend:
+    build: ./api
+    environment:
+      PGHOST: database
+      PGDATABASE: demo
+      PGUSER: demo
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:?Set DEMO_PASSWORD}
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/health', timeout=2).close()"]
+      interval: 3s
+      timeout: 3s
+      retries: 15
+    networks:
+      - api
+      - data
+
+  database:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: demo
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "demo", "-d", "demo"]
+      interval: 3s
+      timeout: 3s
+      retries: 15
+    networks:
+      - data
+
+networks:
+  web:
+  api:
+    internal: true
+  data:
+    internal: true
+
+volumes:
+  database:

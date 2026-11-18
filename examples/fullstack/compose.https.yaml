@@ -1,0 +1,31 @@
+services:
+  lottiex:
+    networks:
+      edge:
+
+  caddy:
+    image: caddy:2
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN for HTTPS}
+    depends_on:
+      - lottiex
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../reverse-proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - certificates:/data
+      - caddy_config:/config
+    networks:
+      edge:
+        ipv4_address: 172.29.252.2
+
+networks:
+  edge:
+    ipam:
+      config:
+        - subnet: 172.29.252.0/24
+
+volumes:
+  certificates:
+  caddy_config:
