@@ -19,7 +19,6 @@ jobs:
       run:
         shell: bash
     outputs:
-      commit: ${{ steps.package.outputs.commit }}
       version: ${{ steps.package.outputs.version }}
     steps:
       - name: Install build dependencies
@@ -39,7 +38,7 @@ jobs:
             echo "Expected tag v$version for this build" >&2
             exit 1
           fi
-          printf 'commit=%s\nversion=%s\n' "$(git rev-parse HEAD)" "$version" >> "$GITHUB_OUTPUT"
+          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
       - name: Run HTTP tests
         run: |
           python3 tests/smoke.py
@@ -64,7 +63,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          COMMIT: ${{ needs.build.outputs.commit }}
+          COMMIT: ${{ github.sha }}
           VERSION: ${{ needs.build.outputs.version }}
         run: |
           if [[ "$GITHUB_REF_TYPE" == tag ]]; then
