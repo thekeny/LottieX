@@ -88,6 +88,8 @@ Both build modes write `build/lttx` and use separate object directories.
 
 ## Deploy a stack on one VM
 
+Run `./examples/fullstack/demo up` to build a Next.js notes app, FastAPI, PostgreSQL and LottieX from this checkout. Open http://127.0.0.1:8080 to try sign-in, notes and file uploads through one origin. [Fullstack demo instructions](examples/fullstack/README.md)
+
 Set your HTTP service addresses and routes in `lottiex.json`. The included Docker Compose and VM examples connect Next.js, FastAPI, PostgreSQL and Grafana. The public HTTPS variant starts Caddy for automatic certificates and keeps the LottieX port internal. [Deployment instructions](examples/reverse-proxy/README.md)
 
 ## Verification

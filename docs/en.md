@@ -23,6 +23,8 @@
 
 ## 1. Overview
 
+For a runnable Next.js, FastAPI and PostgreSQL example, start the `examples/fullstack` stack with `./examples/fullstack/demo up`. [Fullstack demo instructions](../examples/fullstack/README.md)
+
 **LottieX 0.1.0** serves files and routes requests to your applications over HTTP/1.1. See the [VM and Compose deployment examples](../examples/reverse-proxy/README.md) for HTTP and public HTTPS.
 
 Features include GET and HEAD, directory indexes, MIME types, IPv4/IPv6, JSON configuration validation, file streaming and draining accepted work on shutdown.
