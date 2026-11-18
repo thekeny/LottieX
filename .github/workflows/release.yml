@@ -1,15 +1,14 @@
 name: Release LottieX
 
 on:
-  push:
-    branches: [master]
-    tags: ['v*']
+  repository_dispatch:
+    types: [lottiex-release]
 
 permissions:
   contents: read
 
 concurrency:
-  group: release-${{ github.ref }}-${{ github.sha }}
+  group: release-${{ github.event.client_payload.tag }}
 
 jobs:
   build:
@@ -18,15 +17,24 @@ jobs:
     defaults:
       run:
         shell: bash
+    env:
+      RELEASE_TAG: ${{ github.event.client_payload.tag }}
     outputs:
-      version: ${{ steps.package.outputs.version }}
+      commit: ${{ steps.package.outputs.commit }}
     steps:
+      - name: Validate release tag
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo 'Expected a release tag in the form vX.Y.Z' >&2
+            exit 1
+          fi
       - name: Install build dependencies
         run: |
           apt-get update
           apt-get install -y --no-install-recommends ca-certificates git g++ make python3
       - uses: actions/checkout@v4
         with:
+          ref: refs/tags/${{ env.RELEASE_TAG }}
           persist-credentials: false
       - name: Build and package Linux x86_64
         id: package
@@ -34,11 +42,12 @@ jobs:
           ./scripts/release.sh --package
           version=$(./build/lttx version)
           version=${version#LottieX }
-          if [[ "$GITHUB_REF_TYPE" == tag && "$GITHUB_REF_NAME" != "v$version" ]]; then
+          if [[ "$RELEASE_TAG" != "v$version" ]]; then
             echo "Expected tag v$version for this build" >&2
             exit 1
           fi
-          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
+          commit=$(git rev-parse HEAD)
+          printf 'commit=%s\n' "$commit" >> "$GITHUB_OUTPUT"
       - name: Run HTTP tests
         run: |
           python3 tests/smoke.py
@@ -63,17 +72,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          COMMIT: ${{ github.sha }}
-          VERSION: ${{ needs.build.outputs.version }}
+          COMMIT: ${{ needs.build.outputs.commit }}
+          RELEASE_TAG: ${{ github.event.client_payload.tag }}
         run: |
-          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
-            tag=$GITHUB_REF_NAME
-            title="LottieX $tag"
-          else
-            tag=master-$COMMIT
-            title="LottieX v$VERSION"
-          fi
-
+          tag=$RELEASE_TAG
+          title="LottieX $tag"
           latest=false
           master=$(gh api "repos/$GH_REPO/git/ref/heads/master" --jq '.object.sha')
           if [[ "$COMMIT" == "$master" ]]; then
@@ -87,6 +90,6 @@ jobs:
               gh release edit "$tag" --draft=false --latest="$latest"
             fi
           else
-            gh release create "$tag" "${assets[@]}" --target "$COMMIT" \
+            gh release create "$tag" "${assets[@]}" --verify-tag \
               --title "$title" --generate-notes --latest="$latest"
           fi

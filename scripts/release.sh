@@ -8,7 +8,8 @@ Usage: ./scripts/release.sh [vX.Y.Z]
 
 With no arguments, tags the version in includes/lottiex/http.hpp.
 Run from a clean master checkout. The script pushes master and the release
-tag to origin together. GitHub Actions builds and publishes the release.
+tag to origin together and requests the release workflow through GitHub CLI.
+Authenticate first with gh auth login. GitHub Actions builds and publishes the release.
 
 --package builds and packages the Linux x86_64 release locally in build/release-assets.
 EOF
@@ -60,6 +61,13 @@ tag=v$version
 [[ $(git branch --show-current) == master ]] || fail 'switch to master before releasing'
 [[ -z $(git status --porcelain) ]] || fail 'commit your changes before releasing'
 
+command -v gh >/dev/null || fail 'install GitHub CLI (gh) before releasing'
+origin=$(git remote get-url --push origin)
+[[ $origin =~ ^(https://github\.com/|git@github\.com:|ssh://git@github\.com/)([a-zA-Z0-9-]+/[a-zA-Z0-9_.-]+)$ ]] ||
+    fail 'origin must point to a GitHub repository over HTTPS or SSH'
+repository=${BASH_REMATCH[2]%.git}
+gh auth status --hostname github.com >/dev/null || fail 'authenticate with gh auth login'
+
 if existing_commit=$(git rev-parse --verify --quiet "refs/tags/$tag^{commit}"); then
     [[ $existing_commit == "$(git rev-parse HEAD)" ]] || fail "$tag already points to a different commit"
 else
@@ -67,4 +75,7 @@ else
 fi
 
 git push --atomic origin refs/heads/master "refs/tags/$tag"
-printf 'GitHub Actions release tag: %s\n' "$tag"
+gh api --hostname github.com "repos/$repository/dispatches" \
+    -f event_type=lottiex-release -f "client_payload[tag]=$tag" ||
+    fail "could not request the release workflow for $tag; rerun this command to retry"
+printf 'Requested GitHub Actions release for %s\n' "$tag"

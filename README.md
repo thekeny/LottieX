@@ -87,9 +87,9 @@ Both build modes write `build/lttx` and use separate object directories.
 
 ## Releases and website
 
-A push to `master` builds, tests and publishes a Linux x86_64 archive under a `master-<commit>` tag. The Pages workflow deploys the website and serves the installer at `/LottieX/install.sh`. Set **Settings → Pages → Build and deployment → Source** to **GitHub Actions** to enable deployment.
+The Pages workflow deploys the website and serves the installer at `/LottieX/install.sh`. Set **Settings → Pages → Build and deployment → Source** to **GitHub Actions** to enable deployment.
 
-For a versioned release, commit the desired version in `includes/lottiex/http.hpp` on `master` and run `./scripts/release.sh`. It pushes `master` and the matching `vX.Y.Z` tag to `origin`. Use `./scripts/release.sh --package` to build the archive and checksum locally in `build/release-assets/`.
+To publish a release, sign in with GitHub CLI using `gh auth login`, commit the desired version in `includes/lottiex/http.hpp` on `master`, and run `./scripts/release.sh`. The script pushes `master` and the matching `vX.Y.Z` tag to `origin` and requests the GitHub Actions workflow that builds, tests, and publishes the Linux x86_64 archive. Use `./scripts/release.sh --package` to build the archive and checksum locally in `build/release-assets/`.
 
 ## Deploy a stack on one VM
 
