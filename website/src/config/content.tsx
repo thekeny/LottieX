@@ -1,4 +1,4 @@
-import type { FaqItem, Feature, HostOption, NavItem, StartStep } from "./types";
+import type { FaqItem, HostOption, NavItem, StartStep } from "./types";
 import { INSTALL_COMMAND, SECTIONS } from "./links";
 
 export const navItems: NavItem[] = [
@@ -8,30 +8,6 @@ export const navItems: NavItem[] = [
     { label: "Вопросы", href: SECTIONS.faq.href },
 ];
 
-export const features: Feature[] = [
-    {
-        number: "01",
-        title: "Отдаёт твой фронтенд",
-        description: "HTML, CSS, JavaScript и изображения. GET, HEAD, MIME-типы и индексы директорий уже предусмотрены.",
-        visual: "files",
-        tone: "default",
-    },
-    {
-        number: "02",
-        title: "Передаёт файлы блоками",
-        description: "Потоковая отправка без загрузки целого файла в строку. До 64 КиБ за один блок.",
-        visual: "stream",
-        tone: "contrast",
-    },
-    {
-        number: "03",
-        title: "Проверяет пути",
-        description: "Выход за корневую папку и ведущие наружу симлинки получают ответ 404.",
-        visual: "paths",
-        tone: "bright",
-    },
-];
-
 export const startSteps: StartStep[] = [
     {
         id: "install",
@@ -39,8 +15,6 @@ export const startSteps: StartStep[] = [
         comment: "# Без Git: нужны curl, tar, make и C++20",
         code: INSTALL_COMMAND,
         result: "Команда lttx -> ~/.local/bin",
-        description:
-            "Скрипт скачивает исходники, собирает release и кладёт lttx в ~/.local/bin без sudo. В локальном клоне достаточно ./install.sh.",
     },
     {
         id: "run",
@@ -48,7 +22,6 @@ export const startSteps: StartStep[] = [
         comment: "# Сначала проверь конфигурацию",
         code: "lttx check\nlttx run",
         result: "Открой http://127.0.0.1:8080",
-        description: "По умолчанию сервер раздаёт public/ на порту 8080. Остановить его можно сочетанием Ctrl+C.",
     },
     {
         id: "request",
@@ -56,8 +29,6 @@ export const startSteps: StartStep[] = [
         comment: "# В другом терминале",
         code: "curl -I http://127.0.0.1:8080/",
         result: "HEAD -> заголовки без тела ответа",
-        description:
-            "Флаг -I отправляет HEAD-запрос. Для GET-запроса с заголовками и телом ответа используй curl -i.",
     },
 ];
 

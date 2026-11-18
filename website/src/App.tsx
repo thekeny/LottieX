@@ -1,3 +1,4 @@
+import { Toaster } from "react-hot-toast";
 import { About } from "./components/About";
 import { Closing } from "./components/Closing";
 import { Config } from "./components/Config";
@@ -6,18 +7,19 @@ import { Footer } from "./components/Footer";
 import { Hero } from "./components/Hero";
 import { Navbar } from "./components/Navbar";
 import { Start } from "./components/Start";
-import { ToastProvider } from "./components/Toast";
 import { MAIN_CONTENT_ID } from "./config/links";
 import { useIntroAnimation } from "./hooks/useIntroAnimation";
+import { useScrollReveal } from "./hooks/useScrollReveal";
 
 function App() {
     useIntroAnimation();
+    useScrollReveal();
 
     return (
-        <ToastProvider>
+        <>
             <a
                 href={`#${MAIN_CONTENT_ID}`}
-                className="skip fixed left-5 top-[-80px] z-[60] bg-mint p-[14px] text-bg focus:top-3"
+                className="skip fixed left-5 -top-20 z-60 bg-mint p-3.5 text-bg focus:top-3"
             >
                 К содержимому
             </a>
@@ -34,7 +36,25 @@ function App() {
             </main>
 
             <Footer />
-        </ToastProvider>
+
+            <Toaster
+                position="bottom-right"
+                gutter={12}
+                toastOptions={{
+                    duration: 2500,
+                    style: {
+                        background: "var(--color-mint)",
+                        color: "#143722",
+                        borderRadius: 0,
+                        padding: "14px 20px",
+                        fontFamily: "var(--font-mono)",
+                        fontSize: "13px",
+                        lineHeight: "1.5",
+                        boxShadow: "0 12px 30px rgba(0, 0, 0, 0.35)",
+                    },
+                }}
+            />
+        </>
     );
 }
 

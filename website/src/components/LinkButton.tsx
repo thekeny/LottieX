@@ -15,7 +15,7 @@ export function LinkButton({ href, children, variant = "primary", external = fal
         <a
             href={href}
             className={cn(
-                "inline-flex min-h-[54px] items-center justify-between gap-[35px] px-[22px] py-[18px] text-sm font-bold text-[#14261c] transition hover:-translate-y-[2px] active:translate-y-[1px] max-[760px]:min-h-[48px] max-[760px]:gap-[25px] max-[760px]:px-[18px] max-[760px]:py-[14px] max-[760px]:text-[13px]",
+                "inline-flex min-h-13.5 items-center justify-between gap-9 px-5.5 py-4.5 text-sm font-bold text-[#14261c] transition hover:-translate-y-0.5 active:translate-y-px max-md:min-h-12 max-md:gap-6 max-md:px-4.5 max-md:py-3.5",
                 variant === "primary" ? "bg-accent hover:bg-[#ff9c7d]" : "bg-mint hover:bg-ink",
                 className,
             )}

@@ -1,21 +1,23 @@
-import { SECTIONS } from "../config/links";
+import { REPOSITORY } from "../config/links";
 import { LinkButton } from "./LinkButton";
 
 export function Closing() {
     return (
-        <section className="closing wrap pt-[95px] max-[760px]:pt-[65px]" aria-labelledby="closing-title">
-            <div className="barcode max-[760px]:h-[18px]" aria-hidden="true" />
+        <section className="closing wrap pt-16 md:pt-24" aria-labelledby="closing-title">
+            <div data-reveal className="barcode" aria-hidden="true" />
 
-            <div className="relative pb-[70px] pt-16 max-[760px]:pb-[50px] max-[760px]:pt-[42px]">
+            <div data-reveal className="relative pb-17.5 pt-16 max-md:pb-12.5 max-md:pt-10.5">
                 <h2
                     id="closing-title"
-                    className="mb-[35px] mt-8 text-[clamp(42px,6.6vw,92px)] font-normal leading-[0.99] tracking-[-3px] max-[760px]:mt-7 max-[760px]:text-[clamp(39px,9.4vw,65px)] max-[760px]:tracking-[-1.5px]"
+                    className="mb-9 mt-8 text-closing-heading leading-none tracking-tighter max-md:mt-7 max-md:text-closing-mobile max-md:tracking-tight"
                 >
                     Пора показать,
                     <br />
                     что ты собрал<span className="text-mint">.</span>
                 </h2>
-                <LinkButton href={SECTIONS.start.href}>Запустить LottieX</LinkButton>
+                <LinkButton href={REPOSITORY.docsUrl} external>
+                    Запустить LottieX
+                </LinkButton>
             </div>
         </section>
     );

@@ -10,18 +10,6 @@ export type NavItem = {
     href: string;
 };
 
-export type FeatureVisual = "files" | "stream" | "paths";
-
-export type FeatureTone = "default" | "contrast" | "bright";
-
-export type Feature = {
-    number: string;
-    title: string;
-    description: string;
-    visual: FeatureVisual;
-    tone: FeatureTone;
-};
-
 export type StepId = "install" | "run" | "request";
 
 export type StartStep = {
@@ -30,7 +18,6 @@ export type StartStep = {
     comment: string;
     code: string;
     result: string;
-    description: string;
 };
 
 export type HostOption = {
