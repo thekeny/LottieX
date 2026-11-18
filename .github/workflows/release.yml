@@ -71,7 +71,7 @@ jobs:
             title="LottieX $tag"
           else
             tag=master-$COMMIT
-            title="LottieX v$VERSION (master ${COMMIT:0:7})"
+            title="LottieX v$VERSION"
           fi
 
           latest=false
