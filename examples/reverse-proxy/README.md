@@ -54,7 +54,7 @@ Caddy получает и продлевает сертификат через A
 Выполните команды установки и запуска из корня репозитория.
 
 ```bash
-./install.sh
+./scripts/install.sh
 lttx check --config examples/reverse-proxy/lottiex.vm.json
 lttx run --config examples/reverse-proxy/lottiex.vm.json
 ```

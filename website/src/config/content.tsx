@@ -12,14 +12,14 @@ export const startSteps: StartStep[] = [
     {
         id: "install",
         label: "Установка",
-        comment: "# Без Git: нужны curl, tar, make и C++20",
+        comment: "# Linux x86_64: нужны curl, tar и sha256sum",
         code: INSTALL_COMMAND,
         result: "Команда lttx -> ~/.local/bin",
     },
     {
         id: "run",
         label: "Запуск",
-        comment: "# Сначала проверь конфигурацию",
+        comment: "# В папке с lottiex.json",
         code: "lttx check\nlttx run",
         result: "Открой http://127.0.0.1:8080",
     },

@@ -2,7 +2,8 @@
 
 <div align="center">
   <img src="../public/logo.png" alt="LottieX" width="336">
-  <p><strong>HTTP-сервер и обратный прокси на C++20 для Linux, хакатонов и небольших демо.</strong></p>
+  <p><strong>Обратный прокси и HTTP-сервер на C++20 для Linux.</strong></p>
+  <p>Ло́тти Экс · <span lang="en">LOTT-ee eks /ˈlɒti ɛks/</span></p>
   <p><strong>Русский</strong> • <a href="en.md">English</a> • <a href="../README.md">README</a></p>
 </div>
 
@@ -41,34 +42,34 @@
 | Компилятор и стандартная библиотека C++20 | Сборка; используются `std::jthread`, `std::stop_token`, `std::osyncstream` |
 | GNU Make | Управление сборкой |
 | Python 3 | Только запуск tests |
-| curl | Только примеры запросов ниже |
+| curl | Загрузка установщика и примеры запросов |
 
 ### Установка одной командой
 
-Без Git (нужны curl и tar):
+Для Linux x86_64 понадобятся `curl`, Bash, `tar` и `sha256sum`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/thekeny/LottieX/master/install.sh | bash
+curl -fsSL https://thekeny.github.io/LottieX/install.sh | bash
 ```
 
 Или из корня проекта:
 
 ```bash
-./install.sh
+./scripts/install.sh
 lttx check
 lttx run
 ```
 
-Скрипт сам выполняет release-сборку и устанавливает `lttx` в `~/.local/bin`, без `sudo`. При запуске через curl или вне репозитория он скачивает архив исходников с GitHub во временный каталог и удаляет его при завершении. Установка из локального репозитория работает без интернета. GNU Make и компилятор C++20 должны быть установлены заранее. Если каталог отсутствует в `PATH`, скрипт выведет команду для добавления — выполните её в текущем терминале и добавьте в настройки своей оболочки.
+На x86_64 онлайн-установщик скачивает последний релиз с GitHub, проверяет контрольную сумму SHA-256 и устанавливает `lttx` в `~/.local/bin` без `sudo`. Бинарник собирается на Debian 12 и требует совместимых glibc и libstdc++. На других архитектурах Linux установщик скачивает исходники из `master` и собирает их через GNU Make и компилятор C++20. Установка из локального репозитория использует те же инструменты сборки и работает без интернета. Если каталога нет в `PATH`, скрипт выведет команду для добавления. Выполните её в текущем терминале и добавьте в настройки оболочки.
 
-Другой каталог установки: `./install.sh --prefix /абсолютный/путь` или переменная `PREFIX`. Исполняемый файл попадёт в подкаталог `bin/`. Для обновления повторите установку; для удаления удалите установленный файл `bin/lttx`.
+Каталог установки можно задать через `./scripts/install.sh --prefix /абсолютный/путь` или переменную `PREFIX`. Исполняемый файл попадёт в подкаталог `bin/`. Для обновления повторите установку. Для удаления удалите файл `bin/lttx`.
 
-Команда `lttx` доступна из любой директории. Для `run` и `check` нужен `lottiex.json` в текущей директории либо аргумент `--config /путь/к/lottiex.json`. Установщик не копирует конфигурацию и файлы сайта.
+Команда `lttx` доступна из любой директории. Для `run` и `check` нужен `lottiex.json` в текущей директории либо аргумент `--config /путь/к/lottiex.json`. Для запуска демостраницы возьмите `lottiex.json` и `public/` из репозитория или [архива последнего релиза](https://github.com/thekeny/LottieX/releases/latest).
 
 Установка через curl с выбором каталога:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/thekeny/LottieX/master/install.sh | bash -s -- --prefix "$HOME/.local"
+curl -fsSL https://thekeny.github.io/LottieX/install.sh | bash -s -- --prefix "$HOME/.local"
 ```
 
 ### Сборка без установки

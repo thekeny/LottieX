@@ -1,0 +1,93 @@
+name: Release LottieX
+
+on:
+  push:
+    branches: [master]
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}-${{ github.sha }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: debian:bookworm-slim
+    defaults:
+      run:
+        shell: bash
+    outputs:
+      commit: ${{ steps.package.outputs.commit }}
+      version: ${{ steps.package.outputs.version }}
+    steps:
+      - name: Install build dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates git g++ make python3
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build and package Linux x86_64
+        id: package
+        run: |
+          ./scripts/release.sh --package
+          version=$(./build/lttx version)
+          version=${version#LottieX }
+          if [[ "$GITHUB_REF_TYPE" == tag && "$GITHUB_REF_NAME" != "v$version" ]]; then
+            echo "Expected tag v$version for this build" >&2
+            exit 1
+          fi
+          printf 'commit=%s\nversion=%s\n' "$(git rev-parse HEAD)" "$version" >> "$GITHUB_OUTPUT"
+      - name: Run HTTP tests
+        run: |
+          python3 tests/smoke.py
+          python3 tests/proxy.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-x86_64
+          path: build/release-assets/
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-x86_64
+          path: release-assets
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          COMMIT: ${{ needs.build.outputs.commit }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            tag=$GITHUB_REF_NAME
+            title="LottieX $tag"
+          else
+            tag=master-$COMMIT
+            title="LottieX v$VERSION (master ${COMMIT:0:7})"
+          fi
+
+          latest=false
+          master=$(gh api "repos/$GH_REPO/git/ref/heads/master" --jq '.object.sha')
+          if [[ "$COMMIT" == "$master" ]]; then
+            latest=true
+          fi
+          assets=(release-assets/lottiex-linux-x86_64.tar.gz release-assets/SHA256SUMS)
+
+          if draft=$(gh release view "$tag" --json isDraft --jq '.isDraft'); then
+            if [[ "$draft" == true ]]; then
+              gh release upload "$tag" "${assets[@]}" --clobber
+              gh release edit "$tag" --draft=false --latest="$latest"
+            fi
+          else
+            gh release create "$tag" "${assets[@]}" --target "$COMMIT" \
+              --title "$title" --generate-notes --latest="$latest"
+          fi

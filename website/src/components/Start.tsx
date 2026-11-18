@@ -2,9 +2,10 @@ import { useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import { startSteps } from "../config/content";
 import { images } from "../config/images";
-import { SECTIONS } from "../config/links";
+import { REPOSITORY, SECTIONS } from "../config/links";
 import type { StepId } from "../config/types";
 import { cn } from "../lib/cn";
+import { LinkButton } from "./LinkButton";
 import { Terminal } from "./Terminal";
 
 export function Start() {
@@ -44,34 +45,38 @@ export function Start() {
             id={SECTIONS.start.id}
             className="section wrap"
         >
-            <div data-reveal className="section-heading md:mt-2.5">
-                <div>
+            <div className="section-columns md:grid-cols-[clamp(13.5rem,29%,20rem)_minmax(0,1fr)] md:grid-rows-[auto_1fr] lg:gap-x-10 lg:gap-y-8">
+                <div data-reveal className="section-heading mb-0 block md:col-start-2 md:row-start-1 md:pt-8">
                     <h2>
-                        От исходников
+                        От установки
                         <br />до первого запроса
                     </h2>
-                    <p>
-                        Нужен curl, make и компилятор с поддержкой C++20
-                    </p>
-                </div>
-            </div>
-
-            <div className="section-columns">
-                <div data-reveal className="relative flex min-h-77.5 items-center justify-center border border-line max-lg:min-h-72.5 max-md:min-h-57.5">
-                    <img
-                        src={images.icon}
-                        width={896}
-                        height={896}
-                        alt="Пиксельная иконка LottieX"
-                        loading="lazy"
-                        className="size-60 object-contain max-lg:size-55 max-md:size-45"
-                    />
-                    <span className="absolute -right-px -top-px h-3 w-3 bg-mint" aria-hidden="true" />
-                    <span className="absolute -bottom-px -left-px h-3 w-3 bg-mint" aria-hidden="true" />
                 </div>
 
-                <div>
-                    <div data-reveal role="tablist" aria-label="Шаги запуска" className="mb-6 flex border-b border-line font-mono">
+                <div data-reveal className="mx-auto flex w-full max-w-72 flex-col gap-3 md:col-start-1 md:row-span-2 md:row-start-1 md:max-w-none">
+                    <picture>
+                        <source media="(width < 48rem)" srcSet={images.lottie_install_2} />
+                        <img
+                            src={images.lottie_install}
+                            width={496}
+                            height={726}
+                            alt="Аксолотль LottieX с табличкой Install"
+                            loading="lazy"
+                            className="h-auto w-full"
+                        />
+                    </picture>
+                    <LinkButton
+                        variant="secondary"
+                        href={REPOSITORY.releasesUrl}
+                        external
+                        className="min-h-12! gap-2! px-3! py-2! whitespace-nowrap [&>svg]:shrink-0"
+                    >
+                        Релизы на GitHub
+                    </LinkButton>
+                </div>
+
+                <div className="min-w-0 md:col-start-2 md:row-start-2">
+                    <div data-reveal role="tablist" aria-label="Шаги запуска" className="mb-4 flex border-b border-line font-mono">
                         {startSteps.map((item) => (
                             <button
                                 key={item.id}
@@ -105,13 +110,13 @@ export function Start() {
                             role="tabpanel"
                             aria-labelledby={`tab-${step.id}`}
                             tabIndex={0}
-                            className="min-h-45 p-6 max-md:min-h-42.5 max-md:p-5.5"
+                            className="flex min-h-32 flex-col justify-center gap-2.5 p-4"
                         >
-                            <p className="mb-6 font-mono text-xs leading-relaxed text-muted">{step.comment}</p>
-                            <pre className="m-0 whitespace-pre-wrap wrap-anywhere font-mono text-sm leading-loose">
+                            <p className="font-mono text-xs leading-relaxed text-muted">{step.comment}</p>
+                            <pre className="m-0 whitespace-pre-wrap wrap-anywhere font-mono text-sm leading-normal">
                                 <code ref={codeRef}>{step.code}</code>
                             </pre>
-                            <p className="mb-0 mt-6 font-mono text-xs leading-relaxed text-mint">{step.result}</p>
+                            <p className="font-mono text-xs leading-relaxed text-mint">{step.result}</p>
                         </div>
                     </Terminal>
                 </div>

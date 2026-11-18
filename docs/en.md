@@ -2,7 +2,8 @@
 
 <div align="center">
   <img src="../public/logo.png" alt="LottieX" width="336">
-  <p><strong>A C++20 HTTP server and reverse proxy for Linux, hackathons and small demos.</strong></p>
+  <p><strong>A reverse proxy and HTTP server for Linux, built with C++20.</strong></p>
+  <p><span lang="ru">Ло́тти Экс</span> · <span lang="en">LOTT-ee eks /ˈlɒti ɛks/</span></p>
   <p><a href="ru.md">Русский</a> • <strong>English</strong> • <a href="../README.md">README</a></p>
 </div>
 
@@ -41,34 +42,34 @@ The project uses GNU Make, [cpp-httplib](https://github.com/yhirose/cpp-httplib)
 | C++20 compiler and standard library | Building; the code uses `std::jthread`, `std::stop_token` and `std::osyncstream` |
 | GNU Make | Build management |
 | Python 3 | Only for tests |
-| curl | Only for the HTTP examples below |
+| curl | Downloading the installer and running the HTTP examples |
 
 ### Install with one command
 
-Without Git (requires curl and tar):
+On Linux x86_64, with `curl`, Bash, `tar` and `sha256sum`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/thekeny/LottieX/master/install.sh | bash
+curl -fsSL https://thekeny.github.io/LottieX/install.sh | bash
 ```
 
 Or from the project root:
 
 ```bash
-./install.sh
+./scripts/install.sh
 lttx check
 lttx run
 ```
 
-The script builds release mode and installs `lttx` in `~/.local/bin`, without `sudo`. When piped from curl or run outside a checkout, it downloads the source archive from GitHub into a temporary directory and removes it on exit. Local installation works offline. GNU Make and a C++20 compiler must already be installed. If the directory is missing from `PATH`, run the printed command in your current terminal and add it to your shell configuration.
+The online installer downloads the latest GitHub Release on x86_64, checks its SHA-256 checksum and installs `lttx` in `~/.local/bin` without `sudo`. The binary is built on Debian 12 and requires a compatible glibc and libstdc++ at runtime. On other Linux architectures, the online installer downloads the source from `master` and builds it with GNU Make and a C++20 compiler. Installing from a local checkout uses the same build tools and works offline. If the install directory is missing from `PATH`, run the printed command in your current terminal and add it to your shell configuration.
 
-Choose another prefix with `./install.sh --prefix /absolute/path` or the `PREFIX` environment variable. The executable goes into its `bin/` directory. Run the installer again to update; remove the installed `bin/lttx` file to uninstall.
+Choose another prefix with `./scripts/install.sh --prefix /absolute/path` or the `PREFIX` environment variable. The executable goes into its `bin/` directory. Run the installer again to update. Remove the installed `bin/lttx` file to uninstall.
 
-Use `lttx` from any directory. The `run` and `check` commands require a local `lottiex.json` or `--config /path/to/lottiex.json`. The installer does not copy configuration or site files.
+Use `lttx` from any directory. The `run` and `check` commands require a local `lottiex.json` or `--config /path/to/lottiex.json`. To try the demo, get `lottiex.json` and `public/` from the checkout or the [latest release archive](https://github.com/thekeny/LottieX/releases/latest).
 
 With curl and a custom prefix:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/thekeny/LottieX/master/install.sh | bash -s -- --prefix "$HOME/.local"
+curl -fsSL https://thekeny.github.io/LottieX/install.sh | bash -s -- --prefix "$HOME/.local"
 ```
 
 ### Build without installation

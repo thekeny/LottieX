@@ -1,4 +1,6 @@
+import { Volume2 } from "lucide-react";
 import { useRef } from "react";
+import { toast } from "react-hot-toast";
 import { images } from "../config/images";
 import { INSTALL_COMMAND, REPOSITORY, SECTIONS } from "../config/links";
 import { LinkButton } from "./LinkButton";
@@ -6,6 +8,19 @@ import { Terminal } from "./Terminal";
 
 export function Hero() {
     const installRef = useRef<HTMLElement>(null);
+    const pronunciationRef = useRef<HTMLAudioElement>(null);
+
+    const playPronunciation = async () => {
+        const audio = pronunciationRef.current;
+        if (!audio) return;
+
+        try {
+            audio.currentTime = 0;
+            await audio.play();
+        } catch {
+            toast.error("Не удалось воспроизвести произношение LottieX.");
+        }
+    };
 
     return (
         <section
@@ -23,15 +38,31 @@ export function Hero() {
 
             <div className="hero-bottom grid items-start max-md:grid-cols-1 max-md:gap-8 md:max-lg:grid-cols-2 md:max-lg:gap-9">
                 <div>
-                    <h1 className="mb-5.5 mt-0 text-hero-heading leading-none tracking-tighter max-lg:text-3xl max-lg:tracking-tight max-md:text-hero-mobile">
-                        Статический HTTP-сервер
+                    <h1 className="mb-3 mt-0 text-hero-heading leading-none tracking-tighter max-lg:text-3xl max-lg:tracking-tight max-md:text-hero-mobile">
+                        Обратный прокси
                         <br />
-                        для твоего демо
+                        для хакатонов и MVP
                     </h1>
+                    <div className="mb-3 flex items-center gap-2 text-sm text-muted">
+                        <p>Ло́тти Экс · <span lang="en">LOTT-ee eks /ˈlɒti ɛks/</span></p>
+                        <button
+                            type="button"
+                            aria-label="Послушать произношение LottieX"
+                            title="Послушать произношение LottieX"
+                            onClick={playPronunciation}
+                            className="grid size-11 shrink-0 place-items-center text-mint transition-colors hover:bg-mint/10 active:bg-mint/20"
+                        >
+                            <Volume2 aria-hidden="true" size={20} strokeWidth={1.5} />
+                        </button>
+                        <audio
+                            ref={pronunciationRef}
+                            src={`${import.meta.env.BASE_URL}lottiex-pronunciation.mp3`}
+                            preload="none"
+                            hidden
+                        />
+                    </div>
                     <p className="mb-7 mt-0 text-base text-muted max-md:mb-6 max-md:text-sm">
-                        Лендинг, документация или фронтенд с хакатона.
-                        <br />
-                        Укажи папку — LottieX раздаст файлы по HTTP.
+                        Собери фронтенд, API и статику под одним адресом и покажи проект в деле.
                     </p>
                     <div className="flex flex-wrap items-center gap-6.5 max-lg:gap-5">
                         <LinkButton href={SECTIONS.start.href}>Запустить LottieX</LinkButton>

@@ -1,7 +1,8 @@
 <div align="center">
   <img src="public/logo.png" alt="LottieX" width="336">
-  <h1>LottieX</h1>
-  <p><strong>A small C++20 HTTP server and reverse proxy for hackathon demos.</strong></p>
+  <h1>LottieX - Reverse Proxy and HTTP Server</h1>
+  <p><span lang="ru">Ло́тти Экс</span> · <span lang="en">LOTT-ee eks /ˈlɒti ɛks/</span></p>
+  <p><strong>Route requests to your apps and serve static files from one address.</strong></p>
   <p>
     <img src="https://img.shields.io/badge/version-0.1.0-2ea44f" alt="Version 0.1.0">
     <img src="https://img.shields.io/badge/C%2B%2B-20-00599C?logo=cplusplus" alt="C++20">
@@ -34,18 +35,16 @@ LottieX serves HTML, CSS, JavaScript, images and other files from a directory of
 
 ## Quick start
 
-You need Linux, GNU Make and a compiler with a C++20 standard library. Python 3 is required only for smoke tests; `curl` is used in the HTTP examples.
-
-Install without Git (requires curl and tar):
+Install on Linux x86_64 with `curl`, Bash, `tar` and `sha256sum`. The script downloads the latest GitHub Release and installs `lttx` in `~/.local/bin`.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/thekeny/LottieX/master/install.sh | bash
+curl -fsSL https://thekeny.github.io/LottieX/install.sh | bash
 ```
 
-Or install from a local checkout:
+The [release archive](https://github.com/thekeny/LottieX/releases/latest) also includes `lottiex.json` and a demo `public/` directory. From a local checkout, install with GNU Make and a C++20 compiler:
 
 ```bash
-./install.sh
+./scripts/install.sh
 lttx check
 lttx run
 ```
@@ -85,6 +84,12 @@ Fields in the example are required. Routing and server limits are optional. See 
 | `make clean` | Remove build artifacts |
 
 Both build modes write `build/lttx` and use separate object directories.
+
+## Releases and website
+
+A push to `master` builds, tests and publishes a Linux x86_64 archive under a `master-<commit>` tag. The Pages workflow deploys the website and serves the installer at `/LottieX/install.sh`. Set **Settings → Pages → Build and deployment → Source** to **GitHub Actions** to enable deployment.
+
+For a versioned release, commit the desired version in `includes/lottiex/http.hpp` on `master` and run `./scripts/release.sh`. It pushes `master` and the matching `vX.Y.Z` tag to `origin`. Use `./scripts/release.sh --package` to build the archive and checksum locally in `build/release-assets/`.
 
 ## Deploy a stack on one VM
 
