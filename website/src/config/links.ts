@@ -3,7 +3,10 @@ export const REPOSITORY = {
     url: "https://github.com/thekeny/LottieX",
     apiUrl: "https://api.github.com/repos/thekeny/LottieX",
     fallbackStars: 0,
-    docsUrl: "https://github.com/thekeny/LottieX/blob/master/docs/ru.md",
+    docsUrl: {
+        ru: "https://github.com/thekeny/LottieX/blob/master/docs/ru.md",
+        en: "https://github.com/thekeny/LottieX/blob/master/docs/en.md",
+    },
     releasesUrl: "https://github.com/thekeny/LottieX/releases",
     licenseUrl: "https://github.com/thekeny/LottieX/blob/master/LICENSE",
 } as const;

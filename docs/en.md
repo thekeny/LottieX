@@ -3,8 +3,8 @@
 <div align="center">
   <img src="../public/logo.png" alt="LottieX" width="336">
   <p><strong>A reverse proxy and HTTP server for Linux, built with C++20.</strong></p>
-  <p><span lang="ru">Ло́тти Экс</span> · <span lang="en">LOTT-ee eks /ˈlɒti ɛks/</span></p>
-  <p><a href="ru.md">Русский</a> • <strong>English</strong> • <a href="../README.md">README</a></p>
+  <p>LOTT-ee eks /ˈlɒti ɛks/</p>
+  <p><a href="ru.md">Russian</a> • <strong>English</strong> • <a href="../README.md">README</a></p>
 </div>
 
 ---
@@ -330,7 +330,7 @@ Tests start real local servers and create temporary files and symlinks. They cov
 | :--- | :--- |
 | `Cannot open configuration` | The path after `--config`; otherwise, `lottiex.json` in the working directory |
 | `Invalid configuration field: ...` | Check the named field against the configuration reference |
-| 502 or 504 | Check the service address or timeout in the [deployment guide](../examples/reverse-proxy/README.md#диагностика) |
+| 502 or 504 | Check the service address or timeout in the [deployment guide](../examples/reverse-proxy/README.md#troubleshooting) |
 | `Cannot listen on ...` | The address is assigned locally, the port is available, and the process can bind it |
 | 404 for `/` | Serving is enabled and `static.root` contains the `static.index` file |
 | 404 for an existing file | The root is relative to the configuration, the path and case are correct, and any symlink stays inside the root |

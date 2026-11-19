@@ -26,6 +26,7 @@ export type HostOption = {
 };
 
 export type FaqItem = {
+    id: string;
     question: string;
     answer: ReactNode;
 };

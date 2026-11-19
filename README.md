@@ -1,7 +1,7 @@
 <div align="center">
   <img src="public/logo.png" alt="LottieX" width="336">
   <h1>LottieX - Reverse Proxy and HTTP Server</h1>
-  <p><span lang="ru">Ло́тти Экс</span> · <span lang="en">LOTT-ee eks /ˈlɒti ɛks/</span></p>
+  <p>LOTT-ee eks /ˈlɒti ɛks/</p>
   <p><strong>Route requests to your apps and serve static files from one address.</strong></p>
   <p>
     <img src="https://img.shields.io/badge/version-0.1.0-2ea44f" alt="Version 0.1.0">
@@ -11,7 +11,7 @@
   </p>
   <p>
     <a href="docs/en.md">English documentation</a> •
-    <a href="docs/ru.md">Документация на русском</a> •
+    <a href="docs/ru.md">Russian documentation</a> •
     <a href="lottiex.json">Configuration</a> •
     <a href="LICENSE">License</a>
   </p>

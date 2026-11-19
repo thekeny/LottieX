@@ -1,13 +1,15 @@
 import { ArrowRight, ArrowUpRight } from "lucide-react";
+import { useLanguage } from "../config/language";
 import { SECTIONS } from "../config/links";
 
 export function About() {
+    const { copy: { about } } = useLanguage();
     const features = [
         {
             number: "01",
             tone: "default",
-            title: "Отдаёт твой фронтенд",
-            description: "HTML, CSS, JavaScript и изображения. GET, HEAD, MIME-типы и индексы директорий уже предусмотрены.",
+            title: about.frontend,
+            description: about.frontendDescription,
             graphic: (
                 <div className="relative flex h-full flex-col items-start gap-1 font-mono text-xs max-md:w-3/4 max-md:flex-row max-md:flex-wrap max-md:content-center">
                     {["index.html", "style.css", "script.js"].map((file) => (
@@ -26,8 +28,8 @@ export function About() {
         {
             number: "02",
             tone: "contrast",
-            title: "Передаёт файлы блоками",
-            description: "Потоковая отправка без загрузки целого файла в строку. До 64 КиБ за один блок.",
+            title: about.streaming,
+            description: about.streamingDescription,
             graphic: (
                 <div className="flex h-full items-center gap-2">
                     {Array.from({ length: 6 }, (_, index) => (
@@ -43,8 +45,8 @@ export function About() {
         {
             number: "03",
             tone: "bright",
-            title: "Проверяет пути",
-            description: "Выход за корневую папку и ведущие наружу симлинки получают ответ 404.",
+            title: about.paths,
+            description: about.pathsDescription,
             graphic: (
                 <div className="flex h-full flex-col justify-center gap-2.5 font-mono text-xs">
                     <span>./public/</span>
@@ -68,13 +70,10 @@ export function About() {
             <div data-reveal className="section-heading mt-16 max-md:mt-10">
                 <div>
                     <h2>
-                        Всё для статики.
-                        <br />В одном исполняемом файле.
+                        {about.heading}
+                        <br />{about.subheading}
                     </h2>
-                    <p>
-                        Один <code>lttx</code>, один JSON-конфиг и твоя папка с сайтом. Статика, демо с хакатона или
-                        несколько HTTP-сервисов за одним адресом.
-                    </p>
+                    <p>{about.intro}</p>
                 </div>
             </div>
 

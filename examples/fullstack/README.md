@@ -59,6 +59,6 @@ NODE_PATH="$test_tools/node_modules" node tests/fullstack.cjs --compose-restart
 
 The test signs in, exercises CRUD and verifies attachment bytes, reloads a nested route and checks that logout invalidates the session. `--compose-restart` runs `down` and `up` and verifies that the note and attachment survive. Set `DEMO_URL=https://your-domain` to test the HTTPS endpoint and the `Secure` cookie.
 
-## Кратко по-русски
+## Quick reference
 
-Запустите `./examples/fullstack/demo up` из корня проекта и откройте <http://127.0.0.1:8080>. Логин — `demo`, пароль — значение `DEMO_PASSWORD` из `examples/fullstack/.env`. Остановка через `demo down` сохраняет заметки в томе PostgreSQL. Для публичного запуска задайте `DOMAIN` и используйте `demo --https up`. При `502` проверьте, что сервисы запущены, а при `504` проверьте, почему upstream отвечает дольше своего таймаута.
+Run `./examples/fullstack/demo up` from the repository root and open <http://127.0.0.1:8080>. Sign in as `demo` with the `DEMO_PASSWORD` from `examples/fullstack/.env`. Running `demo down` preserves notes in the PostgreSQL volume. For a public deployment, set `DOMAIN` and run `demo --https up`. For a `502`, check that the services are running. For a `504`, investigate what is delaying the upstream response.

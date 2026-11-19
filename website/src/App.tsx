@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Toaster } from "react-hot-toast";
 import { About } from "./components/About";
 import { Closing } from "./components/Closing";
@@ -7,21 +8,32 @@ import { Footer } from "./components/Footer";
 import { Hero } from "./components/Hero";
 import { Navbar } from "./components/Navbar";
 import { Start } from "./components/Start";
+import { content } from "./config/content";
+import { LanguageContext, loadLanguage, saveLanguage } from "./config/language";
 import { MAIN_CONTENT_ID } from "./config/links";
 import { useIntroAnimation } from "./hooks/useIntroAnimation";
 import { useScrollReveal } from "./hooks/useScrollReveal";
 
 function App() {
+    const [language, setLanguage] = useState(loadLanguage);
+    const copy = content[language];
+
+    useEffect(() => {
+        document.documentElement.lang = language;
+        document.querySelector('meta[name="description"]')?.setAttribute("content", copy.description);
+        saveLanguage(language);
+    }, [language, copy]);
+
     useIntroAnimation();
     useScrollReveal();
 
     return (
-        <>
+        <LanguageContext.Provider value={{ language, setLanguage }}>
             <a
                 href={`#${MAIN_CONTENT_ID}`}
                 className="skip fixed left-5 -top-20 z-60 bg-mint p-3.5 text-bg focus:top-3"
             >
-                К содержимому
+                {copy.skip}
             </a>
 
             <Navbar />
@@ -54,7 +66,7 @@ function App() {
                     },
                 }}
             />
-        </>
+        </LanguageContext.Provider>
     );
 }
 

@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
-import { startSteps } from "../config/content";
 import { images } from "../config/images";
+import { useLanguage } from "../config/language";
 import { REPOSITORY, SECTIONS } from "../config/links";
 import type { StepId } from "../config/types";
 import { cn } from "../lib/cn";
@@ -9,6 +9,8 @@ import { LinkButton } from "./LinkButton";
 import { Terminal } from "./Terminal";
 
 export function Start() {
+    const { copy: { start } } = useLanguage();
+    const startSteps = start.steps;
     const [activeStep, setActiveStep] = useState<StepId>("install");
     const codeRef = useRef<HTMLElement>(null);
 
@@ -48,8 +50,8 @@ export function Start() {
             <div className="section-columns md:grid-cols-[clamp(13.5rem,29%,20rem)_minmax(0,1fr)] md:grid-rows-[auto_1fr] lg:gap-x-10 lg:gap-y-8">
                 <div data-reveal className="section-heading mb-0 block md:col-start-2 md:row-start-1 md:pt-8">
                     <h2>
-                        От установки
-                        <br />до первого запроса
+                        {start.heading}
+                        <br />{start.subheading}
                     </h2>
                 </div>
 
@@ -60,7 +62,7 @@ export function Start() {
                             src={images.lottie_install}
                             width={496}
                             height={726}
-                            alt="Аксолотль LottieX с табличкой Install"
+                            alt={start.imageAlt}
                             loading="lazy"
                             className="h-auto w-full"
                         />
@@ -71,12 +73,12 @@ export function Start() {
                         external
                         className="min-h-12! gap-2! px-3! py-2! whitespace-nowrap [&>svg]:shrink-0"
                     >
-                        Релизы на GitHub
+                        {start.releases}
                     </LinkButton>
                 </div>
 
                 <div className="min-w-0 md:col-start-2 md:row-start-2">
-                    <div data-reveal role="tablist" aria-label="Шаги запуска" className="mb-4 flex border-b border-line font-mono">
+                    <div data-reveal role="tablist" aria-label={start.stepsLabel} className="mb-4 flex border-b border-line font-mono">
                         {startSteps.map((item) => (
                             <button
                                 key={item.id}
@@ -103,7 +105,7 @@ export function Start() {
                     <Terminal
                         reveal
                         title="bash"
-                        copy={{ text: step.code, message: "Команда скопирована", source: codeRef }}
+                        copy={{ text: step.code, message: start.copied, source: codeRef }}
                     >
                         <div
                             id="step-panel"

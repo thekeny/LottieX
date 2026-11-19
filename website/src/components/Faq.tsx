@@ -1,22 +1,23 @@
 import { Minus, Plus } from "lucide-react";
 import { useState } from "react";
-import { faqItems } from "../config/content";
+import { useLanguage } from "../config/language";
 import { SECTIONS } from "../config/links";
 import { cn } from "../lib/cn";
 
 export function Faq() {
+    const { copy: { faq } } = useLanguage();
     const [openQuestions, setOpenQuestions] = useState<ReadonlySet<string>>(
-        () => new Set(faqItems[0] ? [faqItems[0].question] : []),
+        () => new Set(faq.items.slice(0, 1).map((item) => item.id)),
     );
 
-    const toggleQuestion = (question: string) => {
+    const toggleQuestion = (id: string) => {
         setOpenQuestions((current) => {
             const next = new Set(current);
 
-            if (next.has(question)) {
-                next.delete(question);
+            if (next.has(id)) {
+                next.delete(id);
             } else {
-                next.add(question);
+                next.add(id);
             }
 
             return next;
@@ -31,20 +32,20 @@ export function Faq() {
             <div data-reveal className="section-heading mb-8">
                 <div>
                     <h2>
-                        Вопросы при запуске
+                        {faq.heading}
                     </h2>
                 </div>
             </div>
 
             <div>
-                {faqItems.map((item, index) => {
-                    const open = openQuestions.has(item.question);
-                    const buttonId = `faq-question-${index}`;
-                    const panelId = `faq-answer-${index}`;
+                {faq.items.map((item) => {
+                    const open = openQuestions.has(item.id);
+                    const buttonId = `faq-question-${item.id}`;
+                    const panelId = `faq-answer-${item.id}`;
 
                     return (
                         <div
-                            key={item.question}
+                            key={item.id}
                             data-reveal
                             className={cn(
                                 "mb-2.5 border-l-2 bg-panel transition-colors",
@@ -57,7 +58,7 @@ export function Faq() {
                                     type="button"
                                     aria-expanded={open}
                                     aria-controls={panelId}
-                                    onClick={() => toggleQuestion(item.question)}
+                                    onClick={() => toggleQuestion(item.id)}
                                     className="flex w-full items-center justify-between gap-6 px-6 py-5.5 text-left text-base transition-colors hover:bg-surface max-md:gap-4.5 max-md:p-4.5 max-md:text-sm"
                                 >
                                     <span>{item.question}</span>

@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { hostOptions } from "../config/content";
+import { useLanguage } from "../config/language";
 import { SECTIONS } from "../config/links";
 import type { ConfigFormState, LottiexConfig } from "../config/types";
 import { Terminal } from "./Terminal";
@@ -18,6 +19,7 @@ const fieldClassName =
 const labelClassName = "mb-3 flex items-center justify-between gap-3 text-sm";
 
 export function Config() {
+    const { copy } = useLanguage();
     const [form, setForm] = useState<ConfigFormState>(initialForm);
     const codeRef = useRef<HTMLElement>(null);
 
@@ -52,22 +54,20 @@ export function Config() {
             <div data-reveal className="section-heading mt-16 max-md:mt-10">
                 <div>
                     <h2>
-                        Твоя папка.
-                        <br />Твой порт. Твой сервер.
+                        {copy.config.heading}
+                        <br />{copy.config.subheading}
                     </h2>
-                    <p>
-                        Попробуй настройки здесь и скопируй готовый JSON в <code>lottiex.json</code>.
-                    </p>
+                    <p>{copy.config.intro}</p>
                 </div>
             </div>
 
             <div className="section-columns">
                 <form data-reveal className="pt-1" onSubmit={(event) => event.preventDefault()}>
-                    <label htmlFor="root" className={labelClassName}>
-                        Папка с сайтом
+                    <label htmlFor="static-root" className={labelClassName}>
+                        {copy.config.root}
                     </label>
                     <input
-                        id="root"
+                        id="static-root"
                         name="root"
                         value={form.root}
                         onChange={handleChange}
@@ -80,7 +80,7 @@ export function Config() {
                     <div className="my-6 config-fields grid gap-5 max-md:gap-4">
                         <div>
                             <label htmlFor="host" className={labelClassName}>
-                                IP-адрес
+                                {copy.config.host}
                             </label>
                             <select id="host" name="host" value={form.host} onChange={handleChange} className={fieldClassName}>
                                 {hostOptions.map((option) => (
@@ -92,7 +92,7 @@ export function Config() {
                         </div>
                         <div>
                             <label htmlFor="port" className={labelClassName}>
-                                Порт
+                                {copy.config.port}
                             </label>
                             <input
                                 id="port"
@@ -109,7 +109,7 @@ export function Config() {
                     </div>
 
                     <label htmlFor="index" className={labelClassName}>
-                        Индекс директории
+                        {copy.config.index}
                     </label>
                     <input
                         id="index"
@@ -123,14 +123,14 @@ export function Config() {
                     />
 
                     <p role="status" className="min-h-4.5 text-xs text-[#ffb398]">
-                        {valid ? "" : "Проверь папку, порт (1–65535) и относительный индекс без .. в пути."}
+                        {valid ? "" : copy.config.invalid}
                     </p>
                 </form>
 
                 <Terminal
                     reveal
                     title="lottiex.json"
-                    copy={{ text: configCode, message: "JSON скопирован", disabled: !valid, source: codeRef }}
+                    copy={{ text: configCode, message: copy.config.copied, disabled: !valid, source: codeRef }}
                 >
                     <pre className="m-0 whitespace-pre-wrap wrap-anywhere px-8 py-7 font-mono text-sm leading-loose text-[#c9edbf] max-md:p-6">
                         <code ref={codeRef}>{configCode}</code>

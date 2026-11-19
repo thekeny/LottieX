@@ -1,8 +1,8 @@
 # LottieX website
 
-Лендинг LottieX на React, TypeScript, Tailwind CSS и Vite.
+The LottieX landing page uses React, TypeScript, Tailwind CSS and Vite. Use the language dropdown in the navigation bar to switch between Russian and English. The site saves your choice in the browser.
 
-## Команды
+## Commands
 
 ```sh
 npm install
@@ -12,15 +12,14 @@ npm run preview
 npm run lint
 ```
 
-`npm run build` сначала проверяет типы (`tsc -b`), затем собирает `dist/`.
+`npm run build` checks types with `tsc -b` and then builds the site into `dist/`.
 
-## Структура
+## Structure
 
-- `src/components/` — секции лендинга и общие элементы интерфейса.
-- `src/config/` — типы, ссылки, изображения и тексты.
-- `src/hooks/` — счётчик звёзд GitHub и вступительная анимация.
-- `src/context/` — контекст тостов.
-- `src/lib/` — утилиты для классов и буфера обмена.
-- `public/` — оригинальные `logo.png` и `icon.png`.
+- `src/components/` contains the landing page sections and shared UI components.
+- `src/config/` contains types, links, images and translated copy.
+- `src/hooks/` contains the GitHub star counter, entrance animation and scroll effects.
+- `src/lib/` contains utilities for CSS classes and clipboard access.
+- `public/` contains the original `logo.png` and `icon.png`, along with the site's other media.
 
-Кнопка GitHub запрашивает `api.github.com/repos/thekeny/LottieX` и показывает актуальное число звёзд рядом с подписью. Значение кэшируется в `localStorage` на 10 минут, поэтому счётчик остаётся видимым, даже если API временно недоступен или упёрся в лимит запросов.
+The GitHub button fetches the current star count from `api.github.com/repos/thekeny/LottieX` and displays it next to its label. The site caches the count in `localStorage` for 10 minutes so it can display a saved count if the API is unavailable or rate-limited.
