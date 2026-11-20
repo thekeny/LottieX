@@ -7,6 +7,7 @@ import { Faq } from "./components/Faq";
 import { Footer } from "./components/Footer";
 import { Hero } from "./components/Hero";
 import { Navbar } from "./components/Navbar";
+import { Partners } from "./components/Partners";
 import { Start } from "./components/Start";
 import { content } from "./config/content";
 import { LanguageContext, loadLanguage, saveLanguage } from "./config/language";
@@ -44,6 +45,7 @@ function App() {
                 <Start />
                 <Config />
                 <Faq />
+                <Partners />
                 <Closing />
             </main>
 

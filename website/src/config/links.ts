@@ -14,6 +14,12 @@ export const REPOSITORY = {
 export const INSTALL_COMMAND =
     "curl -fsSL https://thekeny.github.io/LottieX/install.sh | bash";
 
+export const PARTNER_SITES = {
+    cu: "https://cu.ru/",
+    hse: "https://www.hse.ru/",
+    tbank: "https://www.tbank.ru/",
+} as const;
+
 export const SECTIONS = {
     top: { id: "top", href: "#top" },
     about: { id: "about", href: "#about" },

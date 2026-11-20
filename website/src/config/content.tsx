@@ -284,6 +284,14 @@ const russian = {
         heading: "Вопросы при запуске",
         items: faqItems,
     },
+    partners: {
+        heading: "Партнёры из параллельной вселенной",
+        intro: "Эти компании и вузы никак не связаны с LottieX.",
+        more: "Подробнее",
+        cu: "Центральный университет",
+        hse: "Высшая школа экономики",
+        tbank: "Т-Банк",
+    },
     closing: {
         heading: "Пора показать,",
         subheading: "что ты собрал",
@@ -358,6 +366,14 @@ const english: typeof russian = {
     faq: {
         heading: "Common setup questions",
         items: englishFaqItems,
+    },
+    partners: {
+        heading: "Partners in a parallel universe",
+        intro: "These organizations have no affiliation with LottieX.",
+        more: "Learn more",
+        cu: "Central University",
+        hse: "Higher School of Economics",
+        tbank: "T-Bank",
     },
     closing: {
         heading: "Time to show",
